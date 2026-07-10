@@ -14,9 +14,8 @@ Catálogo online para **Eternity Recuerdos** con panel de administración, carri
 ## Inicio rápido (local)
 
 ```bash
-cd eternity-catalog
 npm install
-cp .env.example .env   # en Windows: copy .env.example .env
+copy .env.example .env
 npm run db:migrate
 npm run db:seed        # productos de ejemplo (opcional)
 npm run dev
