@@ -35,7 +35,7 @@ export function ProductImageLightbox({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+      className="animate-backdrop-in fixed inset-0 z-[100] flex items-center justify-center bg-[#2a211c]/88 p-4 backdrop-blur-sm"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -45,13 +45,13 @@ export function ProductImageLightbox({
         type="button"
         onClick={onClose}
         aria-label="Cerrar"
-        className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-xl text-[#5c4a3d] shadow-lg transition hover:bg-white"
+        className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-xl text-[#4a3b30] shadow-lg transition hover:scale-105 hover:bg-white"
       >
         ×
       </button>
 
       <div
-        className="relative flex h-[min(90vh,900px)] w-full max-w-5xl items-center justify-center"
+        className="animate-lightbox-zoom relative flex h-[min(90vh,900px)] w-full max-w-5xl items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
         <Image
@@ -59,7 +59,7 @@ export function ProductImageLightbox({
           alt={name}
           width={1440}
           height={1440}
-          className="max-h-full max-w-full object-contain object-center"
+          className="max-h-full max-w-full object-contain object-center drop-shadow-2xl"
           unoptimized
           priority
         />
