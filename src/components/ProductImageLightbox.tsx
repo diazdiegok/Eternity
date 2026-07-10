@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 
 type ProductImageLightboxProps = {
@@ -32,11 +33,11 @@ export function ProductImageLightbox({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div
-      className="animate-backdrop-in fixed inset-0 z-[100] bg-[#1a1512]/92 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-3 sm:p-6"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -46,27 +47,26 @@ export function ProductImageLightbox({
         type="button"
         onClick={onClose}
         aria-label="Cerrar"
-        className="absolute right-3 top-3 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-white text-2xl leading-none text-[#4a3b30] shadow-lg transition hover:scale-105 sm:right-5 sm:top-5"
+        className="absolute right-3 top-3 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-white text-2xl leading-none text-[#4a3b30] shadow-lg sm:right-5 sm:top-5"
       >
         ×
       </button>
 
       <div
-        className="animate-lightbox-zoom absolute inset-3 sm:inset-8 md:inset-12"
+        className="relative h-[min(92vh,920px)] w-full max-w-6xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative h-full w-full">
-          <Image
-            src={imageUrl}
-            alt={name}
-            fill
-            sizes="100vw"
-            className="object-contain object-center"
-            unoptimized
-            priority
-          />
-        </div>
+        <Image
+          src={imageUrl}
+          alt={name}
+          fill
+          sizes="100vw"
+          className="object-contain"
+          unoptimized
+          priority
+        />
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
