@@ -29,13 +29,18 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport = {
+  themeColor: "#faf6f1",
+  colorScheme: "light",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${serif.variable} ${sans.variable} h-full`}>
+    <html lang="es" className={`${serif.variable} ${sans.variable} h-full`} style={{ colorScheme: "light" }}>
       <body className="flex min-h-full flex-col bg-[#faf6f1] font-sans text-[#5c4a3d] antialiased">
         <CartProvider>
           <Header />

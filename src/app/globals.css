@@ -3,6 +3,7 @@
 :root {
   --background: #faf6f1;
   --foreground: #5c4a3d;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -10,6 +11,11 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-serif), ui-serif, Georgia, serif;
+}
+
+html {
+  color-scheme: light only;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
