@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: eternity-recuerdos
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /opt/render/project/src/data
+      - key: DATABASE_URL
+        value: file:/opt/render/project/src/data/dev.db
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_SECRET
+        generateValue: true
+      - key: NEXT_PUBLIC_BASE_URL
+        sync: false
+    disk:
+      name: eternity-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
