@@ -26,3 +26,28 @@ model Category {
   slug  String @unique
   order Int    @default(0)
 }
+
+model Order {
+  id             String      @id @default(cuid())
+  code           String      @unique
+  channel        String
+  status         String      @default("pending")
+  customerName   String?
+  customerPhone  String?
+  customerNote   String      @default("")
+  total          Float
+  mpPreferenceId String?
+  items          OrderItem[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String?
+  name      String
+  price     Float
+  quantity  Int
+}

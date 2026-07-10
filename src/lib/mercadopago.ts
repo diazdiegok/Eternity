@@ -12,7 +12,10 @@ export function isMercadoPagoEnabled() {
   return Boolean(process.env.MP_ACCESS_TOKEN);
 }
 
-export async function createCheckoutPreference(items: CartItem[]) {
+export async function createCheckoutPreference(
+  items: CartItem[],
+  options?: { orderId?: string; orderCode?: string }
+) {
   const client = getClient();
   if (!client) {
     throw new Error("Mercado Pago no está configurado");
@@ -30,6 +33,8 @@ export async function createCheckoutPreference(items: CartItem[]) {
         unit_price: item.price,
         currency_id: "ARS",
       })),
+      external_reference: options?.orderId || undefined,
+      statement_descriptor: options?.orderCode || "ETERNITY",
       back_urls: {
         success: `${baseUrl}/checkout/exito`,
         failure: `${baseUrl}/checkout/error`,

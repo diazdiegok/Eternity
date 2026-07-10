@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { formatPrice } from "@/lib/whatsapp";
+import { AdminDashboard } from "@/components/AdminDashboard";
+import { AdminOrders } from "@/components/AdminOrders";
 
 type Product = {
   id: string;
@@ -48,6 +50,7 @@ export function AdminPanel() {
   const [selectedFileName, setSelectedFileName] = useState("");
   const [categoryMode, setCategoryMode] = useState<"preset" | "custom">("preset");
   const [customCategory, setCustomCategory] = useState("");
+  const [tab, setTab] = useState<"dashboard" | "orders" | "products">("dashboard");
 
   const categoryOptions = useMemo(() => {
     const fromProducts = products.map((p) => p.category);
@@ -312,7 +315,7 @@ export function AdminPanel() {
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-serif text-3xl text-stone-800">Administración</h1>
-          <p className="text-stone-500">Gestioná productos, precios e imágenes</p>
+          <p className="text-stone-500">Dashboard, ventas web y catálogo</p>
         </div>
         <div className="flex gap-3">
           <Link
@@ -331,6 +334,37 @@ export function AdminPanel() {
         </div>
       </div>
 
+      <div className="mb-8 flex flex-wrap gap-2">
+        {(
+          [
+            ["dashboard", "Dashboard"],
+            ["orders", "Ventas"],
+            ["products", "Productos"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={`rounded-full px-4 py-2 text-sm transition ${
+              tab === id
+                ? "bg-[#4a3b30] text-white"
+                : "bg-white text-[#6d5c4d] ring-1 ring-[#e4d5c5]"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "dashboard" && (
+        <AdminDashboard onGoOrders={() => setTab("orders")} />
+      )}
+
+      {tab === "orders" && <AdminOrders products={products} />}
+
+      {tab === "products" && (
+        <>
       <form
         onSubmit={handleSave}
         className="mb-10 rounded-2xl border border-[#e8ddd3] bg-white p-6 shadow-sm"
@@ -573,6 +607,8 @@ export function AdminPanel() {
           ))}
         </div>
       </section>
+        </>
+      )}
     </main>
   );
 }

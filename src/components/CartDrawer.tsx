@@ -43,10 +43,11 @@ export function CartDrawer() {
       const res = await fetch("/api/checkout/mercadopago", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({ items, note }),
       });
       const data = await res.json();
       if (data.checkoutUrl) {
+        clearCart();
         window.location.href = data.checkoutUrl;
         return;
       }
@@ -58,7 +59,16 @@ export function CartDrawer() {
     }
   }
 
-  function handleWhatsApp() {
+  async function handleWhatsApp() {
+    try {
+      await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items, channel: "whatsapp", note }),
+      });
+    } catch {
+      // Si falla el registro, igual abrimos WhatsApp
+    }
     window.open(buildWhatsAppUrl(items, note), "_blank", "noopener,noreferrer");
   }
 
