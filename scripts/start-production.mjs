@@ -6,8 +6,13 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
 
-function linkPublicUploads() {
+function ensureDataDir() {
   const dataDir = process.env.DATA_DIR || path.join(root, "data");
+  fs.mkdirSync(dataDir, { recursive: true });
+  return dataDir;
+}
+
+function linkPublicUploads(dataDir) {
   const uploadsDir = path.join(dataDir, "uploads");
   const publicUploads = path.join(root, "public", "uploads");
 
@@ -26,7 +31,8 @@ function linkPublicUploads() {
 }
 
 console.log("Preparando almacenamiento...");
-linkPublicUploads();
+const dataDir = ensureDataDir();
+linkPublicUploads(dataDir);
 
 console.log("Aplicando migraciones...");
 execSync("npx prisma migrate deploy", { stdio: "inherit", cwd: root });
