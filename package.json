@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
+    "build:render": "npm install --include=dev && npm run build",
     "start": "node scripts/start-production.mjs",
     "lint": "eslint",
     "postinstall": "prisma generate",
