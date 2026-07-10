@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import { ProductCard } from "@/components/ProductCard";
 import { Reveal } from "@/components/Reveal";
-import { SITE } from "@/lib/config";
-import { InstagramIcon, WhatsAppIcon } from "@/components/Icons";
+import { HeroBrand } from "@/components/HeroBrand";
 
 type Product = {
   id: string;
@@ -59,54 +57,7 @@ export function CatalogPage() {
         <div className="pointer-events-none absolute -right-16 top-10 h-56 w-56 rounded-full bg-[#d4b896]/15 blur-3xl" />
         <div className="pointer-events-none absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-[#a67c52]/10 blur-3xl" />
 
-        <div className="relative mx-auto grid max-w-5xl items-center gap-7 px-5 py-12 sm:gap-10 sm:px-6 sm:py-16 md:grid-cols-[auto_1fr] md:py-20">
-          <div className="animate-soft-in animate-float mx-auto h-40 w-40 overflow-hidden rounded-full bg-[#f7f1ea] shadow-[0_22px_50px_-20px_rgba(74,59,48,0.5)] ring-1 ring-[#d4b896]/55 sm:h-52 sm:w-52 md:mx-0 md:h-60 md:w-60">
-            <div className="relative h-full w-full">
-              <Image
-                src="/logo-hero.webp"
-                alt="Eternity Recuerdos"
-                fill
-                className="object-cover"
-                sizes="(max-width: 640px) 160px, (max-width: 768px) 208px, 240px"
-                priority
-                unoptimized
-              />
-            </div>
-          </div>
-
-          <div className="text-center md:text-left">
-            <h1 className="animate-fade-up font-serif text-[3rem] leading-[0.92] tracking-[0.03em] text-[#4a3b30] sm:text-6xl md:text-7xl">
-              {SITE.name}
-            </h1>
-            <p className="animate-fade-up animate-delay-1 mt-4 text-base text-[#6d5c4d] sm:text-lg">
-              {SITE.tagline}
-            </p>
-            <p className="animate-fade-up animate-delay-2 mx-auto mt-2 max-w-md text-sm text-[#8a7b6e] md:mx-0">
-              Piezas únicas hechas con amor para guardar un recuerdo eterno.
-            </p>
-
-            <div className="animate-fade-up animate-delay-3 mt-8 flex flex-col gap-2.5 sm:flex-row sm:justify-center md:justify-start">
-              <a
-                href={`https://wa.me/${SITE.whatsapp}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-press inline-flex items-center justify-center gap-2 rounded-full bg-[#4a3b30] px-6 py-3.5 text-sm font-medium text-[#f7f1ea] shadow-[0_10px_24px_-12px_rgba(74,59,48,0.7)] hover:bg-[#5c4a3d]"
-              >
-                <WhatsAppIcon className="h-4 w-4" />
-                Consultar por WhatsApp
-              </a>
-              <a
-                href={SITE.instagram}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-press inline-flex items-center justify-center gap-2 rounded-full border border-[#c9b29a] bg-white/40 px-6 py-3.5 text-sm font-medium text-[#4a3b30] backdrop-blur-sm hover:bg-white/80"
-              >
-                <InstagramIcon className="h-4 w-4" />
-                Instagram
-              </a>
-            </div>
-          </div>
-        </div>
+        <HeroBrand />
       </section>
 
       <section className="mx-auto max-w-6xl px-0 pb-16 pt-0 sm:px-6 sm:pb-20 sm:pt-2">
