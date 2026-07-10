@@ -51,9 +51,9 @@ export function ProductCard({ product }: { product: Product }) {
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 unoptimized
               />
-              <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#4a3b30]/35 to-transparent p-4 opacity-0 transition duration-300 group-hover:opacity-100">
-                <span className="inline-flex rounded-full bg-white/90 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-[#4a3b30]">
-                  Ampliar
+              <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#4a3b30]/40 to-transparent p-3 sm:p-4 sm:opacity-0 sm:transition sm:duration-300 sm:group-hover:opacity-100">
+                <span className="inline-flex rounded-full bg-white/95 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-[#4a3b30]">
+                  Tocá para ampliar
                 </span>
               </span>
             </button>
