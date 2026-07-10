@@ -1,8 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #faf6f1;
-  --foreground: #5c4a3d;
+  --background: #f7f1ea;
+  --foreground: #4a3b30;
+  --cream: #f7f1ea;
+  --cream-deep: #efe4d8;
+  --ink: #4a3b30;
+  --ink-soft: #6d5c4d;
+  --gold: #a67c52;
+  --line: #e4d5c5;
   color-scheme: light;
 }
 
@@ -29,5 +35,54 @@ body {
 
 ::selection {
   background: #d4b89666;
-  color: #5c4a3d;
+  color: #4a3b30;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes soft-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.7s ease-out both;
+}
+
+.animate-soft-in {
+  animation: soft-in 0.8s ease-out both;
+}
+
+.animate-delay-1 {
+  animation-delay: 0.12s;
+}
+
+.animate-delay-2 {
+  animation-delay: 0.24s;
+}
+
+.animate-delay-3 {
+  animation-delay: 0.36s;
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }

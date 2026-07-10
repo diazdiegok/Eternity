@@ -3,22 +3,24 @@ import { InstagramIcon, WhatsAppIcon } from "@/components/Icons";
 
 export function Footer() {
   return (
-    <footer className="mt-auto border-t border-[#e8ddd3] bg-[#f5ebe3]">
-      <div className="mx-auto flex max-w-7xl flex-col items-center gap-5 px-4 py-8 text-center sm:flex-row sm:justify-between sm:gap-6 sm:px-6 sm:text-left">
+    <footer className="mt-auto border-t border-[#e4d5c5] bg-[#efe4d8]/70">
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-5 px-5 py-9 text-center sm:flex-row sm:justify-between sm:px-6 sm:text-left">
         <div>
-          <p className="font-serif text-lg tracking-wide text-[#5c4a3d]">{SITE.name}</p>
-          <p className="text-sm text-[#6b5d52]">{SITE.subtitle}</p>
+          <p className="font-serif text-xl tracking-[0.08em] text-[#4a3b30]">
+            {SITE.name}
+          </p>
+          <p className="mt-1 text-sm text-[#6d5c4d]">{SITE.subtitle}</p>
         </div>
 
-        <div className="flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
+        <div className="flex items-center gap-3">
           <a
             href={`https://wa.me/${SITE.whatsapp}`}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Contactar por WhatsApp"
-            className="flex items-center justify-center gap-2 rounded-full bg-[#3d7a54] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#326644] sm:py-2.5"
+            className="inline-flex h-11 items-center gap-2 rounded-full bg-[#4a3b30] px-5 text-sm font-medium text-[#f7f1ea] transition hover:bg-[#6d5c4d]"
           >
-            <WhatsAppIcon className="h-5 w-5" />
+            <WhatsAppIcon className="h-4 w-4" />
             WhatsApp
           </a>
           <a
@@ -26,9 +28,9 @@ export function Footer() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Seguir en Instagram"
-            className="flex items-center justify-center gap-2 rounded-full border border-[#d4b896] bg-white px-5 py-3 text-sm font-medium text-[#5c4a3d] transition hover:bg-[#faf6f1] sm:py-2.5"
+            className="inline-flex h-11 items-center gap-2 rounded-full border border-[#c9b29a] bg-white/50 px-5 text-sm font-medium text-[#4a3b30] transition hover:bg-white"
           >
-            <InstagramIcon className="h-5 w-5 text-[#c13584]" />
+            <InstagramIcon className="h-4 w-4" />
             Instagram
           </a>
         </div>

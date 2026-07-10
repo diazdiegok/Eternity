@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport = {
-  themeColor: "#faf6f1",
+  themeColor: "#f7f1ea",
   colorScheme: "light",
 };
 
@@ -41,7 +41,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${serif.variable} ${sans.variable} h-full`} style={{ colorScheme: "light" }}>
-      <body className="flex min-h-full flex-col bg-[#faf6f1] font-sans text-[#5c4a3d] antialiased">
+      <body className="flex min-h-full flex-col bg-[#f7f1ea] font-sans text-[#4a3b30] antialiased">
         <CartProvider>
           <Header />
           {children}
