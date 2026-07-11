@@ -139,22 +139,38 @@ export function CartDrawer() {
 
     let orderCode: string | null = null;
     let sent: boolean | null = null;
+
     try {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 25_000);
+
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...orderPayload, channel: "whatsapp" }),
+        signal: controller.signal,
       });
+      window.clearTimeout(timeout);
+
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setNotice(data.error || "No se pudo registrar el pedido");
-        setSubmitting(false);
         return;
       }
       if (data.code) orderCode = String(data.code);
-      sent = Boolean(data.emailSent);
-    } catch {
-      // Si falla el registro, igual abrimos WhatsApp
+      // El mail se envía en segundo plano; no bloquea el carrito
+      sent = data.emailSent === true ? true : data.emailQueued ? null : false;
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setNotice(
+          "Tardó demasiado registrar el pedido. Revisá Ventas o intentá de nuevo."
+        );
+        return;
+      }
+      setNotice("No se pudo conectar. Intentá de nuevo.");
+      return;
+    } finally {
+      setSubmitting(false);
     }
 
     window.open(
@@ -171,7 +187,6 @@ export function CartDrawer() {
     setCouponMsg("");
     setEmailSent(sent);
     setCompletedCode(orderCode || "registrado");
-    setSubmitting(false);
   }
 
   const showSuccess = Boolean(completedCode) && items.length === 0;
@@ -236,8 +251,8 @@ export function CartDrawer() {
                   {emailSent === true
                     ? "Te enviamos el detalle al correo y abrimos WhatsApp para confirmarlo."
                     : emailSent === false
-                      ? "Abrimos WhatsApp para confirmarlo. El correo no se pudo enviar todavía (revisá la config SMTP en Render)."
-                      : "Abrimos WhatsApp para confirmarlo."}
+                      ? "Abrimos WhatsApp para confirmarlo. Si no llega el correo, revisá spam o la config SMTP."
+                      : "Abrimos WhatsApp para confirmarlo. En unos segundos debería llegarte el correo con el detalle."}
                 </p>
               </div>
               <button

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import { createOrder } from "@/lib/orders";
 import {
   isValidEmail,
@@ -36,14 +37,22 @@ export async function POST(request: NextRequest) {
         body.discountPercent != null ? Number(body.discountPercent) : 0,
     });
 
-    const mail = await sendOrderReceivedEmail(email, {
-      code: order.code,
-      createdAt: order.createdAt,
-      total: order.total,
-      customerNote: order.customerNote,
-      couponCode: order.couponCode,
-      discountAmount: order.discountAmount,
-      items: order.items,
+    // No bloquear el checkout: el mail se intenta después de responder
+    after(async () => {
+      const mail = await sendOrderReceivedEmail(email, {
+        code: order.code,
+        createdAt: order.createdAt,
+        total: order.total,
+        customerNote: order.customerNote,
+        couponCode: order.couponCode,
+        discountAmount: order.discountAmount,
+        items: order.items,
+      });
+      if (!mail.ok) {
+        console.error(
+          `Pedido ${order.code}: correo no enviado — ${mail.error || "desconocido"}`
+        );
+      }
     });
 
     return NextResponse.json({
@@ -51,9 +60,8 @@ export async function POST(request: NextRequest) {
       code: order.code,
       total: order.total,
       email,
-      emailSent: mail.ok,
-      emailSkipped: mail.skipped,
-      emailError: mail.ok ? null : mail.error || "No se pudo enviar el correo",
+      emailQueued: true,
+      emailSent: null,
     });
   } catch (error) {
     console.error("Create order error:", error);

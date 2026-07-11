@@ -90,8 +90,28 @@ function createTransport() {
     port,
     secure: process.env.SMTP_SECURE === "true" || port === 465,
     requireTLS: port === 587,
+    connectionTimeout: 8_000,
+    greetingTimeout: 8_000,
+    socketTimeout: 12_000,
     auth: { user, pass },
   });
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`${label} agotó el tiempo (${ms}ms)`)),
+          ms
+        );
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 async function sendMail(to: string, subject: string, html: string) {
@@ -109,8 +129,17 @@ async function sendMail(to: string, subject: string, html: string) {
 
   try {
     const transport = createTransport();
-    const info = await transport.sendMail({ from, to, subject, html });
+    const info = await withTimeout(
+      transport.sendMail({ from, to, subject, html }),
+      12_000,
+      "Envío SMTP"
+    );
     console.log(`Correo enviado a ${to}: ${info.messageId}`);
+    try {
+      transport.close();
+    } catch {
+      // ignore
+    }
     return { ok: true as const, skipped: false as const };
   } catch (error) {
     const message =
