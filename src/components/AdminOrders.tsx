@@ -55,6 +55,12 @@ const channelLabel: Record<string, string> = {
 const inputClass =
   "mt-1.5 w-full rounded-xl border border-[#e8ddd3] bg-[#faf6f1] px-3 py-2.5 text-[#5c4a3d] outline-none transition focus:border-[#c9956a] focus:ring-2 focus:ring-[#c9956a]/20";
 
+function toDatetimeLocalValue(iso: string) {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function AdminOrders({ products }: { products: Product[] }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState("all");
@@ -72,6 +78,7 @@ export function AdminOrders({ products }: { products: Product[] }) {
     customerPhone: "",
     customerNote: "",
     status: "confirmed",
+    createdAt: "",
   });
   const [editItems, setEditItems] = useState<EditItem[]>([]);
   const [editSaving, setEditSaving] = useState(false);
@@ -131,6 +138,7 @@ export function AdminOrders({ products }: { products: Product[] }) {
       customerPhone: order.customerPhone || "",
       customerNote: order.customerNote || "",
       status: order.status,
+      createdAt: toDatetimeLocalValue(order.createdAt),
     });
     setEditItems(
       order.items.map((item) => ({
@@ -185,6 +193,9 @@ export function AdminOrders({ products }: { products: Product[] }) {
         customerName: editForm.customerName,
         customerPhone: editForm.customerPhone,
         customerNote: editForm.customerNote,
+        createdAt: editForm.createdAt
+          ? new Date(editForm.createdAt).toISOString()
+          : undefined,
         items: editItems.map((item) => ({
           productId: item.productId || null,
           name: item.name,
@@ -342,6 +353,7 @@ export function AdminOrders({ products }: { products: Product[] }) {
           <div className="flex flex-wrap gap-2">
             {[
               ["all", "Todos"],
+              ["manual", "Manual"],
               ["web", "Solo web"],
               ["pending", "Pendientes"],
               ["whatsapp", "WhatsApp"],
@@ -437,6 +449,21 @@ export function AdminOrders({ products }: { products: Product[] }) {
                             </option>
                           ))}
                         </select>
+                      </label>
+                      <label className="text-sm font-medium text-[#5c4a3d]">
+                        Fecha
+                        <input
+                          type="datetime-local"
+                          value={editForm.createdAt}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              createdAt: e.target.value,
+                            })
+                          }
+                          className={inputClass}
+                          required
+                        />
                       </label>
                     </div>
 

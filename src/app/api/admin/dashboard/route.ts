@@ -68,12 +68,15 @@ export async function GET() {
   const last7: { date: string; label: string; total: number; count: number }[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = daysAgo(i);
-    const next = new Date(d);
-    next.setDate(next.getDate() + 1);
+    const next = new Date(d.getTime() + 24 * 60 * 60 * 1000);
     const dayOrders = counted.filter((o) => o.createdAt >= d && o.createdAt < next);
     last7.push({
       date: d.toISOString().slice(0, 10),
-      label: d.toLocaleDateString("es-AR", { weekday: "short", day: "numeric" }),
+      label: d.toLocaleDateString("es-AR", {
+        timeZone: "America/Argentina/Buenos_Aires",
+        weekday: "short",
+        day: "numeric",
+      }),
       total: dayOrders.reduce((s, o) => s + o.total, 0),
       count: dayOrders.length,
     });

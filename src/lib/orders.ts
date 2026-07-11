@@ -63,13 +63,27 @@ export async function createOrder(input: {
 }
 
 export function startOfDay(d = new Date()) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
+  return startOfDayInTimeZone(d, "America/Argentina/Buenos_Aires");
+}
+
+/** Medianoche en zona horaria de Argentina (UTC-3). */
+export function startOfDayInTimeZone(
+  d = new Date(),
+  timeZone = "America/Argentina/Buenos_Aires"
+) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(d);
+  const y = parts.find((p) => p.type === "year")!.value;
+  const m = parts.find((p) => p.type === "month")!.value;
+  const day = parts.find((p) => p.type === "day")!.value;
+  return new Date(`${y}-${m}-${day}T00:00:00-03:00`);
 }
 
 export function daysAgo(n: number) {
-  const d = startOfDay();
-  d.setDate(d.getDate() - n);
-  return d;
+  const today = startOfDay();
+  return new Date(today.getTime() - n * 24 * 60 * 60 * 1000);
 }

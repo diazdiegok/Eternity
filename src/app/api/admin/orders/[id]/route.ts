@@ -25,6 +25,13 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Estado inválido" }, { status: 400 });
   }
 
+  if (body.createdAt !== undefined) {
+    const parsed = new Date(String(body.createdAt));
+    if (Number.isNaN(parsed.getTime())) {
+      return NextResponse.json({ error: "Fecha inválida" }, { status: 400 });
+    }
+  }
+
   let itemsData: ItemInput[] | null = null;
   if (body.items !== undefined) {
     if (!Array.isArray(body.items) || body.items.length === 0) {
@@ -76,6 +83,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         }),
         ...(body.customerNote !== undefined && {
           customerNote: String(body.customerNote || ""),
+        }),
+        ...(body.createdAt !== undefined && {
+          createdAt: new Date(String(body.createdAt)),
         }),
         ...(total !== undefined && { total }),
       },

@@ -102,21 +102,32 @@ export function AdminDashboard({ onGoOrders }: { onGoOrders: () => void }) {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-2xl border border-[#e4d5c5] bg-white p-5">
-          <h3 className="font-serif text-xl text-[#4a3b30]">Ventas web (7 días)</h3>
+          <h3 className="font-serif text-xl text-[#4a3b30]">Ventas (7 días)</h3>
           <p className="mt-1 text-sm text-[#8a7b6e]">
-            Solo pedidos confirmados, pagados o completados
+            Todos los canales · confirmados, pagados o completados
           </p>
-          <div className="mt-6 flex h-40 items-end gap-2">
-            {data.last7.map((day) => (
-              <div key={day.date} className="flex flex-1 flex-col items-center gap-2">
+          <div className="mt-6 flex h-44 items-end gap-2">
+            {data.last7.map((day) => {
+              const pct =
+                day.total > 0 ? Math.max((day.total / maxBar) * 100, 12) : 0;
+              return (
                 <div
-                  className="w-full rounded-t-md bg-[#4a3b30] transition"
-                  style={{ height: `${Math.max((day.total / maxBar) * 100, day.total > 0 ? 8 : 2)}%` }}
-                  title={formatPrice(day.total)}
-                />
-                <span className="text-[10px] capitalize text-[#8a7b6e]">{day.label}</span>
-              </div>
-            ))}
+                  key={day.date}
+                  className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2"
+                >
+                  <div className="flex w-full flex-1 items-end">
+                    <div
+                      className="w-full rounded-t-md bg-[#4a3b30] transition"
+                      style={{ height: `${pct}%` }}
+                      title={`${formatPrice(day.total)} · ${day.count} ventas`}
+                    />
+                  </div>
+                  <span className="text-[10px] capitalize text-[#8a7b6e]">
+                    {day.label}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </section>
 
