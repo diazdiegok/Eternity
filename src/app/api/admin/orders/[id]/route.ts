@@ -33,15 +33,16 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         { status: 400 }
       );
     }
-    itemsData = body.items.map((item: ItemInput) => ({
+    const mapped: ItemInput[] = body.items.map((item: ItemInput) => ({
       productId: item.productId || null,
       name: String(item.name || "").trim(),
       price: Number(item.price),
       quantity: Math.max(1, Number(item.quantity) || 1),
     }));
-    if (itemsData.some((i) => !i.name || Number.isNaN(i.price))) {
+    if (mapped.some((i) => !i.name || Number.isNaN(i.price))) {
       return NextResponse.json({ error: "Ítems inválidos" }, { status: 400 });
     }
+    itemsData = mapped;
   }
 
   const total =
