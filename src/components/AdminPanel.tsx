@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/whatsapp";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { AdminOrders } from "@/components/AdminOrders";
 import { AdminCoupons } from "@/components/AdminCoupons";
+import { AdminPromotions } from "@/components/AdminPromotions";
 
 type Product = {
   id: string;
@@ -52,7 +53,12 @@ export function AdminPanel() {
   const [categoryMode, setCategoryMode] = useState<"preset" | "custom">("preset");
   const [customCategory, setCustomCategory] = useState("");
   const [tab, setTab] = useState<
-    "dashboard" | "orders" | "products" | "categories" | "coupons"
+    | "dashboard"
+    | "orders"
+    | "products"
+    | "categories"
+    | "coupons"
+    | "promotions"
   >("dashboard");
   const [renameFrom, setRenameFrom] = useState("");
   const [renameTo, setRenameTo] = useState("");
@@ -388,6 +394,7 @@ export function AdminPanel() {
             ["orders", "Ventas"],
             ["products", "Productos"],
             ["categories", "Categorías"],
+            ["promotions", "Promociones"],
             ["coupons", "Cupones"],
           ] as const
         ).map(([id, label]) => (
@@ -413,6 +420,10 @@ export function AdminPanel() {
       {tab === "orders" && <AdminOrders products={products} />}
 
       {tab === "coupons" && <AdminCoupons />}
+
+      {tab === "promotions" && (
+        <AdminPromotions categories={categoryOptions} />
+      )}
 
       {tab === "categories" && (
         <form

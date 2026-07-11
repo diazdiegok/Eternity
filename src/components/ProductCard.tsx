@@ -14,6 +14,9 @@ type Product = {
   imageUrl: string | null;
   category: string;
   featured: boolean;
+  salePrice?: number | null;
+  promotionPercent?: number | null;
+  promotionEndsAt?: string | null;
 };
 
 export function ProductCard({ product }: { product: Product }) {
@@ -21,11 +24,18 @@ export function ProductCard({ product }: { product: Product }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [added, setAdded] = useState(false);
 
+  const onSale =
+    product.salePrice != null &&
+    product.salePrice < product.price &&
+    (product.promotionPercent || 0) > 0;
+  const displayPrice = onSale ? product.salePrice! : product.price;
+
   function handleAdd() {
     addItem({
       id: product.id,
       name: product.name,
-      price: product.price,
+      price: displayPrice,
+      ...(onSale ? { originalPrice: product.price } : {}),
     });
     setAdded(true);
     window.setTimeout(() => setAdded(false), 900);
@@ -63,11 +73,18 @@ export function ProductCard({ product }: { product: Product }) {
             </div>
           )}
 
-          {product.featured && (
-            <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-[#4a3b30]/90 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-[#f7f1ea] backdrop-blur-sm">
-              Destacado
-            </span>
-          )}
+          <div className="pointer-events-none absolute left-3 top-3 flex flex-col gap-1.5">
+            {onSale && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#c45c26] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-sm">
+                <span aria-hidden>🔥</span> HOT −{product.promotionPercent}%
+              </span>
+            )}
+            {product.featured && (
+              <span className="rounded-full bg-[#4a3b30]/90 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-[#f7f1ea] backdrop-blur-sm">
+                Destacado
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-1 flex-col gap-3 px-4 py-4 sm:px-5 sm:py-5">
@@ -87,10 +104,23 @@ export function ProductCard({ product }: { product: Product }) {
             )}
           </div>
 
-          <div className="mt-auto flex items-center justify-between gap-3 border-t border-[#efe4d8] pt-3.5">
-            <p className="font-serif text-xl font-medium tracking-wide text-[#4a3b30]">
-              {formatPrice(product.price)}
-            </p>
+          <div className="mt-auto flex items-end justify-between gap-3 border-t border-[#efe4d8] pt-3.5">
+            <div>
+              {onSale ? (
+                <>
+                  <p className="text-sm text-[#9a8b7e] line-through decoration-[#c45c26]/70">
+                    {formatPrice(product.price)}
+                  </p>
+                  <p className="font-serif text-xl font-medium tracking-wide text-[#c45c26]">
+                    {formatPrice(displayPrice)}
+                  </p>
+                </>
+              ) : (
+                <p className="font-serif text-xl font-medium tracking-wide text-[#4a3b30]">
+                  {formatPrice(product.price)}
+                </p>
+              )}
+            </div>
             <button
               type="button"
               onClick={handleAdd}

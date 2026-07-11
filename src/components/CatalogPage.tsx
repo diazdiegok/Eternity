@@ -13,6 +13,9 @@ type Product = {
   imageUrl: string | null;
   category: string;
   featured: boolean;
+  salePrice?: number | null;
+  promotionPercent?: number | null;
+  promotionEndsAt?: string | null;
 };
 
 const CATEGORY_ORDER = ["Sin Bordes", "Bordes de Acero", "Plata 925", "Mascotas"];

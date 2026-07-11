@@ -171,9 +171,20 @@ export function CartDrawer() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-medium text-[#4a3b30]">{item.name}</p>
-                      <p className="text-sm text-[#8a7b6e]">
-                        {formatPrice(item.price)} c/u
-                      </p>
+                      {item.originalPrice && item.originalPrice > item.price ? (
+                        <p className="text-sm text-[#8a7b6e]">
+                          <span className="mr-1.5 line-through decoration-[#c45c26]/70">
+                            {formatPrice(item.originalPrice)}
+                          </span>
+                          <span className="text-[#c45c26]">
+                            {formatPrice(item.price)} c/u · 🔥 HOT
+                          </span>
+                        </p>
+                      ) : (
+                        <p className="text-sm text-[#8a7b6e]">
+                          {formatPrice(item.price)} c/u
+                        </p>
+                      )}
                     </div>
                     <button
                       type="button"
