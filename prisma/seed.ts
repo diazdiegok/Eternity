@@ -156,7 +156,14 @@ const products = [
 ];
 
 async function main() {
-  await db.product.deleteMany();
+  const existing = await db.product.count();
+  if (existing > 0) {
+    console.log(
+      `Ya hay ${existing} productos. Seed cancelado (no se borra nada).`
+    );
+    return;
+  }
+
   await db.product.createMany({ data: products });
   console.log(`${products.length} productos cargados.`);
 }
