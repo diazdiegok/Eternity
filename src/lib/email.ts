@@ -51,16 +51,22 @@ function escapeHtml(s: string) {
 }
 
 function wrapEmail(title: string, body: string) {
+  const brand = SITE.emailBrand;
+  const logoUrl = `${getBaseUrl()}/logo.png`;
+
   return `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="utf-8" /><title>${escapeHtml(title)}</title></head>
 <body style="margin:0;padding:0;background:#f7f1ea;font-family:Georgia,serif;color:#4a3b30;">
   <div style="max-width:560px;margin:24px auto;padding:28px;background:#fff;border-radius:20px;border:1px solid #e4d5c5;">
-    <p style="margin:0;font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:#a67c52;">${escapeHtml(SITE.brandFull)}</p>
-    <h1 style="margin:12px 0 0;font-size:26px;font-weight:normal;">${escapeHtml(title)}</h1>
+    <div style="text-align:center;margin:0 0 20px;">
+      <img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(brand)}" width="96" height="96" style="display:inline-block;width:96px;height:96px;border-radius:50%;object-fit:cover;border:1px solid #e4d5c5;" />
+      <p style="margin:12px 0 0;font-size:13px;letter-spacing:0.18em;text-transform:uppercase;color:#a67c52;">${escapeHtml(brand)}</p>
+    </div>
+    <h1 style="margin:12px 0 0;font-size:26px;font-weight:normal;text-align:center;">${escapeHtml(title)}</h1>
     ${body}
-    <p style="margin:28px 0 0;font-size:12px;color:#8a7b6e;">
-      Si tenés dudas, escribinos por WhatsApp o Instagram.
+    <p style="margin:28px 0 0;font-size:12px;color:#8a7b6e;text-align:center;">
+      ${escapeHtml(brand)} · Joyas de leche materna
     </p>
   </div>
 </body>
@@ -72,15 +78,15 @@ function parseFrom(raw?: string | null) {
   const match = value.match(/^(.*)<([^>]+)>$/);
   if (match) {
     return {
-      name: match[1].trim().replace(/^"|"$/g, "") || SITE.brandFull,
+      name: match[1].trim().replace(/^"|"$/g, "") || SITE.emailBrand,
       email: match[2].trim(),
     };
   }
   if (value.includes("@")) {
-    return { name: SITE.brandFull, email: value };
+    return { name: SITE.emailBrand, email: value };
   }
   return {
-    name: SITE.brandFull,
+    name: SITE.emailBrand,
     email: process.env.SMTP_USER?.trim() || "onboarding@resend.dev",
   };
 }
@@ -145,7 +151,7 @@ async function sendViaResend(
   const apiKey = process.env.RESEND_API_KEY!.trim();
   const from =
     process.env.EMAIL_FROM?.trim() ||
-    `${SITE.brandFull} <onboarding@resend.dev>`;
+    `${SITE.emailBrand} <onboarding@resend.dev>`;
   const replyTo = process.env.SMTP_USER?.trim() || undefined;
 
   const resend = new Resend(apiKey);
@@ -229,7 +235,7 @@ export async function sendOrderReceivedEmail(
 
   return sendMail(
     to,
-    `Pedido ${order.code} recibido — ${SITE.brandFull}`,
+    `Pedido ${order.code} recibido — ${SITE.emailBrand}`,
     wrapEmail("Pedido registrado", body)
   );
 }
@@ -259,21 +265,8 @@ export async function sendOrderShippedEmail(
 
   return sendMail(
     to,
-    `Tu pedido ${order.code} está en envío — ${SITE.brandFull}`,
+    `Tu pedido ${order.code} está en envío — ${SITE.emailBrand}`,
     wrapEmail("Pedido en envío", body)
-  );
-}
-
-export async function sendTestEmail(to: string) {
-  return sendMail(
-    to,
-    `Prueba de correo — ${SITE.brandFull}`,
-    wrapEmail(
-      "Correo de prueba",
-      `<p style="margin:16px 0;line-height:1.5;color:#6d5c4d;">
-        Si estás leyendo esto, el envío de correos desde Eternity está funcionando.
-      </p>`
-    )
   );
 }
 

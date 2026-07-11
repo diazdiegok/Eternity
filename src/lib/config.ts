@@ -1,6 +1,8 @@
 export const SITE = {
   name: "Eternity",
   brandFull: "Eternity Recuerdos",
+  /** Nombre que aparece en correos al cliente */
+  emailBrand: "Eternity Joyas Maternas",
   tagline: "Joyas de leche materna",
   subtitle: "Accesorios y box personalizados",
   whatsapp: "5493435001061",
