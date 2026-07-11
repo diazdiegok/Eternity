@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/auth";
 import {
+  getEmailProvider,
   isEmailConfigured,
   isValidEmail,
   normalizeEmail,
@@ -12,14 +13,22 @@ export async function GET() {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
+  const provider = getEmailProvider();
+  const from =
+    process.env.EMAIL_FROM?.trim() ||
+    process.env.SMTP_USER?.trim() ||
+    null;
+
   return NextResponse.json({
     configured: isEmailConfigured(),
-    provider: "resend",
-    from: process.env.EMAIL_FROM?.trim() || null,
-    replyTo: process.env.SMTP_USER?.trim() || null,
-    note: isEmailConfigured()
-      ? "Resend listo (HTTPS). Render Free bloquea Gmail SMTP."
-      : "Falta RESEND_API_KEY en Render.",
+    provider,
+    from,
+    note:
+      provider === "brevo"
+        ? "Brevo listo (gratis). Podés enviar a cualquier cliente desde tu Gmail verificado."
+        : provider === "resend"
+          ? "Resend listo. Sin dominio propio solo llega a tu mail de Resend."
+          : "Configurá BREVO_API_KEY (gratis con Gmail). Render Free bloquea Gmail SMTP.",
   });
 }
 
@@ -46,5 +55,5 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ ok: true, to });
+  return NextResponse.json({ ok: true, to, provider: result.provider });
 }

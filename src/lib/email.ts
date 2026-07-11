@@ -19,8 +19,8 @@ type OrderMailBase = {
 };
 
 export type SendMailResult =
-  | { ok: true; skipped: false }
-  | { ok: false; skipped: boolean; error: string };
+  | { ok: true; skipped: false; provider: string }
+  | { ok: false; skipped: boolean; error: string; provider?: string };
 
 function formatDate(value: Date | string) {
   return new Date(value).toLocaleString("es-AR", {
@@ -67,16 +67,108 @@ function wrapEmail(title: string, body: string) {
 </html>`;
 }
 
-/** Resend (HTTPS) funciona en Render Free. Gmail SMTP está bloqueado ahí. */
-export function isEmailConfigured() {
-  return Boolean(process.env.RESEND_API_KEY?.trim());
+function parseFrom(raw?: string | null) {
+  const value = (raw || "").trim();
+  const match = value.match(/^(.*)<([^>]+)>$/);
+  if (match) {
+    return {
+      name: match[1].trim().replace(/^"|"$/g, "") || SITE.brandFull,
+      email: match[2].trim(),
+    };
+  }
+  if (value.includes("@")) {
+    return { name: SITE.brandFull, email: value };
+  }
+  return {
+    name: SITE.brandFull,
+    email: process.env.SMTP_USER?.trim() || "onboarding@resend.dev",
+  };
 }
 
-function getFromAddress() {
-  return (
-    process.env.EMAIL_FROM?.trim() ||
-    `${SITE.brandFull} <onboarding@resend.dev>`
+export function getEmailProvider(): "brevo" | "resend" | null {
+  if (process.env.BREVO_API_KEY?.trim()) return "brevo";
+  if (process.env.RESEND_API_KEY?.trim()) return "resend";
+  return null;
+}
+
+export function isEmailConfigured() {
+  return getEmailProvider() !== null;
+}
+
+async function sendViaBrevo(
+  to: string,
+  subject: string,
+  html: string
+): Promise<SendMailResult> {
+  const apiKey = process.env.BREVO_API_KEY!.trim();
+  const sender = parseFrom(
+    process.env.EMAIL_FROM || process.env.SMTP_USER
   );
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      "content-type": "application/json",
+      "api-key": apiKey,
+    },
+    body: JSON.stringify({
+      sender: { name: sender.name, email: sender.email },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+      replyTo: { email: sender.email, name: sender.name },
+    }),
+  });
+
+  const json = (await response.json().catch(() => ({}))) as {
+    messageId?: string;
+    message?: string;
+  };
+
+  if (!response.ok) {
+    const message =
+      json.message || `Brevo error HTTP ${response.status}`;
+    console.error("Error Brevo:", message);
+    return { ok: false, skipped: false, error: message, provider: "brevo" };
+  }
+
+  console.log(`Correo enviado a ${to} via Brevo: ${json.messageId || "ok"}`);
+  return { ok: true, skipped: false, provider: "brevo" };
+}
+
+async function sendViaResend(
+  to: string,
+  subject: string,
+  html: string
+): Promise<SendMailResult> {
+  const apiKey = process.env.RESEND_API_KEY!.trim();
+  const from =
+    process.env.EMAIL_FROM?.trim() ||
+    `${SITE.brandFull} <onboarding@resend.dev>`;
+  const replyTo = process.env.SMTP_USER?.trim() || undefined;
+
+  const resend = new Resend(apiKey);
+  const { data, error } = await resend.emails.send({
+    from,
+    to: [to],
+    subject,
+    html,
+    replyTo,
+  });
+
+  if (error) {
+    console.error("Error Resend:", error.message);
+    return {
+      ok: false,
+      skipped: false,
+      error: error.message,
+      provider: "resend",
+    };
+  }
+
+  console.log(`Correo enviado a ${to} via Resend: ${data?.id || "ok"}`);
+  return { ok: true, skipped: false, provider: "resend" };
 }
 
 async function sendMail(
@@ -84,41 +176,24 @@ async function sendMail(
   subject: string,
   html: string
 ): Promise<SendMailResult> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  if (!apiKey) {
-    console.warn(
-      "RESEND_API_KEY no configurada: se omite envío (Render Free bloquea Gmail SMTP)"
-    );
+  const provider = getEmailProvider();
+  if (!provider) {
     return {
       ok: false,
       skipped: true,
       error:
-        "Falta RESEND_API_KEY. Render Free no permite Gmail SMTP; usá Resend.",
+        "Falta BREVO_API_KEY (recomendado, gratis con Gmail) o RESEND_API_KEY. Render Free bloquea Gmail SMTP.",
     };
   }
 
   try {
-    const resend = new Resend(apiKey);
-    const { data, error } = await resend.emails.send({
-      from: getFromAddress(),
-      to: [to],
-      subject,
-      html,
-      replyTo: process.env.SMTP_USER?.trim() || undefined,
-    });
-
-    if (error) {
-      console.error("Error Resend:", error.message);
-      return { ok: false, skipped: false, error: error.message };
-    }
-
-    console.log(`Correo enviado a ${to} via Resend: ${data?.id || "ok"}`);
-    return { ok: true, skipped: false };
+    if (provider === "brevo") return await sendViaBrevo(to, subject, html);
+    return await sendViaResend(to, subject, html);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Error al enviar correo";
-    console.error("Error Resend:", message);
-    return { ok: false, skipped: false, error: message };
+    console.error(`Error ${provider}:`, message);
+    return { ok: false, skipped: false, error: message, provider };
   }
 }
 
