@@ -50,7 +50,9 @@ export function AdminPanel() {
   const [selectedFileName, setSelectedFileName] = useState("");
   const [categoryMode, setCategoryMode] = useState<"preset" | "custom">("preset");
   const [customCategory, setCustomCategory] = useState("");
-  const [tab, setTab] = useState<"dashboard" | "orders" | "products">("dashboard");
+  const [tab, setTab] = useState<"dashboard" | "orders" | "products" | "categories">(
+    "dashboard"
+  );
   const [renameFrom, setRenameFrom] = useState("");
   const [renameTo, setRenameTo] = useState("");
   const [renaming, setRenaming] = useState(false);
@@ -384,6 +386,7 @@ export function AdminPanel() {
             ["dashboard", "Dashboard"],
             ["orders", "Ventas"],
             ["products", "Productos"],
+            ["categories", "Categorías"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -407,54 +410,59 @@ export function AdminPanel() {
 
       {tab === "orders" && <AdminOrders products={products} />}
 
+      {tab === "categories" && (
+        <form
+          onSubmit={handleRenameCategory}
+          className="rounded-2xl border border-[#e8ddd3] bg-white p-6 shadow-sm"
+        >
+          <h2 className="font-serif text-xl text-stone-800">Editar categoría</h2>
+          <p className="mt-1 text-sm text-[#9a8b7e]">
+            Renombra una categoría y se actualiza en todos los productos.
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm font-medium text-[#5c4a3d]">
+              Categoría actual
+              <select
+                value={renameFrom}
+                onChange={(e) => {
+                  setRenameFrom(e.target.value);
+                  if (!renameTo) setRenameTo(e.target.value);
+                }}
+                className={`${inputClass} cursor-pointer`}
+              >
+                <option value="">Elegí una...</option>
+                {categoryOptions.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm font-medium text-[#5c4a3d]">
+              Nombre nuevo
+              <input
+                value={renameTo}
+                onChange={(e) => setRenameTo(e.target.value)}
+                placeholder="Nuevo nombre"
+                className={inputClass}
+              />
+            </label>
+          </div>
+          <button
+            type="submit"
+            disabled={renaming || !renameFrom || !renameTo.trim()}
+            className="mt-4 rounded-full bg-[#5c4a3d] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#4a3b30] disabled:opacity-50"
+          >
+            {renaming ? "Renombrando..." : "Renombrar categoría"}
+          </button>
+          {message && (
+            <p className="mt-3 text-sm text-green-700">{message}</p>
+          )}
+        </form>
+      )}
+
       {tab === "products" && (
         <>
-      <form
-        onSubmit={handleRenameCategory}
-        className="mb-6 rounded-2xl border border-[#e8ddd3] bg-white p-6 shadow-sm"
-      >
-        <h2 className="font-serif text-xl text-stone-800">Editar categoría</h2>
-        <p className="mt-1 text-sm text-[#9a8b7e]">
-          Renombra una categoría y se actualiza en todos los productos.
-        </p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm font-medium text-[#5c4a3d]">
-            Categoría actual
-            <select
-              value={renameFrom}
-              onChange={(e) => {
-                setRenameFrom(e.target.value);
-                if (!renameTo) setRenameTo(e.target.value);
-              }}
-              className={`${inputClass} cursor-pointer`}
-            >
-              <option value="">Elegí una...</option>
-              {categoryOptions.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-sm font-medium text-[#5c4a3d]">
-            Nombre nuevo
-            <input
-              value={renameTo}
-              onChange={(e) => setRenameTo(e.target.value)}
-              placeholder="Nuevo nombre"
-              className={inputClass}
-            />
-          </label>
-        </div>
-        <button
-          type="submit"
-          disabled={renaming || !renameFrom || !renameTo.trim()}
-          className="mt-4 rounded-full bg-[#5c4a3d] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#4a3b30] disabled:opacity-50"
-        >
-          {renaming ? "Renombrando..." : "Renombrar categoría"}
-        </button>
-      </form>
-
       <form
         onSubmit={handleSave}
         className="mb-10 rounded-2xl border border-[#e8ddd3] bg-white p-6 shadow-sm"

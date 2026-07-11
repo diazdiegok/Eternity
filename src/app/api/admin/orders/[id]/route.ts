@@ -6,6 +6,13 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 const ALLOWED = ["pending", "confirmed", "paid", "completed", "cancelled"];
 
+type ItemInput = {
+  productId?: string | null;
+  name: string;
+  price: number;
+  quantity: number;
+};
+
 export async function PUT(request: NextRequest, context: RouteContext) {
   if (!(await isAdminAuthenticated())) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
@@ -18,21 +25,61 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Estado inválido" }, { status: 400 });
   }
 
-  const order = await db.order.update({
-    where: { id },
-    data: {
-      ...(body.status != null && { status: String(body.status) }),
-      ...(body.customerName !== undefined && {
-        customerName: body.customerName ? String(body.customerName) : null,
-      }),
-      ...(body.customerPhone !== undefined && {
-        customerPhone: body.customerPhone ? String(body.customerPhone) : null,
-      }),
-      ...(body.customerNote !== undefined && {
-        customerNote: String(body.customerNote || ""),
-      }),
-    },
-    include: { items: true },
+  let itemsData: ItemInput[] | null = null;
+  if (body.items !== undefined) {
+    if (!Array.isArray(body.items) || body.items.length === 0) {
+      return NextResponse.json(
+        { error: "El pedido necesita al menos un ítem" },
+        { status: 400 }
+      );
+    }
+    itemsData = body.items.map((item: ItemInput) => ({
+      productId: item.productId || null,
+      name: String(item.name || "").trim(),
+      price: Number(item.price),
+      quantity: Math.max(1, Number(item.quantity) || 1),
+    }));
+    if (itemsData.some((i) => !i.name || Number.isNaN(i.price))) {
+      return NextResponse.json({ error: "Ítems inválidos" }, { status: 400 });
+    }
+  }
+
+  const total =
+    itemsData != null
+      ? itemsData.reduce((sum, i) => sum + i.price * i.quantity, 0)
+      : undefined;
+
+  const order = await db.$transaction(async (tx) => {
+    if (itemsData != null) {
+      await tx.orderItem.deleteMany({ where: { orderId: id } });
+      await tx.orderItem.createMany({
+        data: itemsData.map((item) => ({
+          orderId: id,
+          productId: item.productId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+      });
+    }
+
+    return tx.order.update({
+      where: { id },
+      data: {
+        ...(body.status != null && { status: String(body.status) }),
+        ...(body.customerName !== undefined && {
+          customerName: body.customerName ? String(body.customerName) : null,
+        }),
+        ...(body.customerPhone !== undefined && {
+          customerPhone: body.customerPhone ? String(body.customerPhone) : null,
+        }),
+        ...(body.customerNote !== undefined && {
+          customerNote: String(body.customerNote || ""),
+        }),
+        ...(total !== undefined && { total }),
+      },
+      include: { items: true },
+    });
   });
 
   return NextResponse.json(order);
