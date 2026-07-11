@@ -26,6 +26,8 @@ export function CartDrawer() {
   const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [mpEnabled, setMpEnabled] = useState(false);
   const [loadingMp, setLoadingMp] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [completedCode, setCompletedCode] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/checkout/mercadopago")
@@ -44,6 +46,11 @@ export function CartDrawer() {
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  function handleClose() {
+    setCompletedCode(null);
+    closeCart();
+  }
 
   async function handleApplyCoupon() {
     setApplyingCoupon(true);
@@ -99,31 +106,50 @@ export function CartDrawer() {
   }
 
   async function handleWhatsApp() {
+    if (submitting || items.length === 0) return;
+    setSubmitting(true);
+
+    const cartSnapshot = [...items];
+    const noteSnapshot = note;
+    const couponSnapshot = coupon
+      ? {
+          code: coupon.code,
+          percentOff: coupon.percentOff,
+          amount: discountAmount,
+        }
+      : null;
+
+    let orderCode: string | null = null;
     try {
-      await fetch("/api/orders", {
+      const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...orderPayload, channel: "whatsapp" }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.code) {
+        orderCode = String(data.code);
+      }
     } catch {
       // Si falla el registro, igual abrimos WhatsApp
     }
+
     window.open(
-      buildWhatsAppUrl(
-        items,
-        note,
-        coupon
-          ? {
-              code: coupon.code,
-              percentOff: coupon.percentOff,
-              amount: discountAmount,
-            }
-          : null
-      ),
+      buildWhatsAppUrl(cartSnapshot, noteSnapshot, couponSnapshot, orderCode),
       "_blank",
       "noopener,noreferrer"
     );
+
+    clearCart();
+    clearCoupon();
+    setNote("");
+    setCouponInput("");
+    setCouponMsg("");
+    setCompletedCode(orderCode || "registrado");
+    setSubmitting(false);
   }
+
+  const showSuccess = Boolean(completedCode) && items.length === 0;
 
   return (
     <>
@@ -131,22 +157,26 @@ export function CartDrawer() {
         type="button"
         aria-label="Cerrar carrito"
         className="animate-backdrop-in fixed inset-0 z-50 bg-[#4a3b30]/35 backdrop-blur-[2px]"
-        onClick={closeCart}
+        onClick={handleClose}
       />
 
       <aside className="animate-drawer-in fixed bottom-0 right-0 top-0 z-50 flex w-full max-w-md flex-col bg-[#f7f1ea] shadow-2xl sm:rounded-l-3xl">
         <div className="flex items-center justify-between border-b border-[#e4d5c5] px-5 py-4">
           <div>
-            <h2 className="font-serif text-2xl text-[#4a3b30]">Tu carrito</h2>
+            <h2 className="font-serif text-2xl text-[#4a3b30]">
+              {showSuccess ? "Pedido realizado" : "Tu carrito"}
+            </h2>
             <p className="text-xs text-[#8a7b6e]">
-              {items.length === 0
-                ? "Vacío"
-                : `${items.reduce((n, i) => n + i.quantity, 0)} ítem(s)`}
+              {showSuccess
+                ? "Te redirigimos a WhatsApp"
+                : items.length === 0
+                  ? "Vacío"
+                  : `${items.reduce((n, i) => n + i.quantity, 0)} ítem(s)`}
             </p>
           </div>
           <button
             type="button"
-            onClick={closeCart}
+            onClick={handleClose}
             className="flex h-9 w-9 items-center justify-center rounded-full text-[#6d5c4d] transition hover:bg-[#efe4d8]"
           >
             ✕
@@ -154,7 +184,42 @@ export function CartDrawer() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
-          {items.length === 0 ? (
+          {showSuccess ? (
+            <div className="flex h-full flex-col items-center justify-center gap-4 px-4 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#e8f5e9] text-2xl text-green-700">
+                ✓
+              </div>
+              <div>
+                <p className="font-serif text-2xl text-[#4a3b30]">
+                  ¡Pedido realizado!
+                </p>
+                {completedCode && completedCode !== "registrado" ? (
+                  <p className="mt-3 text-sm text-[#6d5c4d]">
+                    Tu número de pedido es
+                  </p>
+                ) : (
+                  <p className="mt-3 text-sm text-[#6d5c4d]">
+                    Abrimos WhatsApp para que completes la consulta.
+                  </p>
+                )}
+                {completedCode && completedCode !== "registrado" && (
+                  <p className="mt-2 font-serif text-3xl tracking-wide text-[#4a3b30]">
+                    {completedCode}
+                  </p>
+                )}
+                <p className="mt-4 text-sm text-[#8a7b6e]">
+                  Enviá el mensaje en WhatsApp para confirmarlo con nosotros.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleClose}
+                className="mt-2 rounded-full bg-[#4a3b30] px-6 py-3 text-sm font-medium text-white"
+              >
+                Seguir mirando
+              </button>
+            </div>
+          ) : items.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
               <p className="font-serif text-xl text-[#4a3b30]">Todavía vacío</p>
               <p className="text-sm text-[#8a7b6e]">
@@ -224,7 +289,7 @@ export function CartDrawer() {
           )}
         </div>
 
-        {items.length > 0 && (
+        {!showSuccess && items.length > 0 && (
           <div className="space-y-4 border-t border-[#e4d5c5] bg-white/50 p-5 backdrop-blur-sm">
             <textarea
               value={note}
@@ -303,10 +368,11 @@ export function CartDrawer() {
             <button
               type="button"
               onClick={handleWhatsApp}
-              className="btn-press flex w-full items-center justify-center gap-2 rounded-full bg-[#4a3b30] py-3.5 font-medium text-[#f7f1ea] shadow-[0_12px_28px_-14px_rgba(74,59,48,0.8)] hover:bg-[#5c4a3d]"
+              disabled={submitting}
+              className="btn-press flex w-full items-center justify-center gap-2 rounded-full bg-[#4a3b30] py-3.5 font-medium text-[#f7f1ea] shadow-[0_12px_28px_-14px_rgba(74,59,48,0.8)] hover:bg-[#5c4a3d] disabled:opacity-60"
             >
               <WhatsAppIcon className="h-5 w-5" />
-              Finalizar por WhatsApp
+              {submitting ? "Registrando..." : "Finalizar por WhatsApp"}
             </button>
 
             {mpEnabled && (

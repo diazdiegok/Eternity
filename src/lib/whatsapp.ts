@@ -19,7 +19,8 @@ export function formatPrice(amount: number) {
 export function buildWhatsAppUrl(
   items: CartItem[],
   note?: string,
-  discount?: { code: string; percentOff: number; amount: number } | null
+  discount?: { code: string; percentOff: number; amount: number } | null,
+  orderCode?: string | null
 ) {
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const total = discount ? Math.max(0, subtotal - discount.amount) : subtotal;
@@ -27,12 +28,19 @@ export function buildWhatsAppUrl(
   const lines = [
     `Hola! Quiero consultar/comprar en *${SITE.brandFull}*:`,
     "",
+  ];
+
+  if (orderCode) {
+    lines.push(`Pedido *${orderCode}*`, "");
+  }
+
+  lines.push(
     ...items.map(
       (item) =>
         `• ${item.quantity}x ${item.name} — ${formatPrice(item.price * item.quantity)}`
     ),
-    "",
-  ];
+    ""
+  );
 
   if (discount && discount.percentOff > 0) {
     lines.push(

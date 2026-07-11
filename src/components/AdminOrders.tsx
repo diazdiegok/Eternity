@@ -45,8 +45,8 @@ const STATUSES = [
 ];
 
 const channelLabel: Record<string, string> = {
-  whatsapp: "WhatsApp",
-  mercadopago: "Mercado Pago",
+  whatsapp: "Solo WEB",
+  mercadopago: "MP",
   manual: "Manual",
 };
 
@@ -106,9 +106,7 @@ export function AdminOrders({ products }: { products: Product[] }) {
   const filtered = useMemo(() => {
     if (filter === "all") return orders;
     if (filter === "web") {
-      return orders.filter(
-        (o) => o.channel === "whatsapp" || o.channel === "mercadopago"
-      );
+      return orders.filter((o) => o.channel === "whatsapp");
     }
     return orders.filter((o) => o.status === filter || o.channel === filter);
   }, [orders, filter]);
@@ -358,9 +356,8 @@ export function AdminOrders({ products }: { products: Product[] }) {
             {[
               ["all", "Todos"],
               ["manual", "Manual"],
-              ["web", "Solo web"],
+              ["web", "Solo WEB"],
               ["pending", "Pendientes"],
-              ["whatsapp", "WhatsApp"],
               ["mercadopago", "MP"],
             ].map(([value, label]) => (
               <button
@@ -383,8 +380,8 @@ export function AdminOrders({ products }: { products: Product[] }) {
           <p className="text-sm text-[#8a7b6e]">Cargando pedidos...</p>
         ) : filtered.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[#d4b896] bg-white p-8 text-center text-sm text-[#8a7b6e]">
-            Todavía no hay pedidos. Cuando alguien finalice por WhatsApp o Mercado
-            Pago, se listan acá.
+            Todavía no hay pedidos. Cuando alguien finalice desde la web, se
+            listan acá.
           </div>
         ) : (
           <div className="space-y-3">
