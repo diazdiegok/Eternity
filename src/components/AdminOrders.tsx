@@ -50,7 +50,7 @@ const STATUSES = [
 ];
 
 const channelLabel: Record<string, string> = {
-  whatsapp: "Solo WEB",
+  whatsapp: "WEB",
   mercadopago: "MP",
   manual: "Manual",
 };
@@ -433,7 +433,7 @@ export function AdminOrders({ products }: { products: Product[] }) {
             {[
               ["all", "Todos"],
               ["manual", "Manual"],
-              ["web", "Solo WEB"],
+              ["web", "WEB"],
               ["pending", "Pendientes"],
               ["mercadopago", "MP"],
             ].map(([value, label]) => (

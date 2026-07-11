@@ -35,7 +35,7 @@ type DashboardData = {
 };
 
 const channelLabel: Record<string, string> = {
-  whatsapp: "Solo WEB",
+  whatsapp: "WEB",
   mercadopago: "MP",
   manual: "Manual",
 };

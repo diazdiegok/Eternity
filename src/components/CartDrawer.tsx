@@ -30,6 +30,7 @@ export function CartDrawer() {
   const [submitting, setSubmitting] = useState(false);
   const [completedCode, setCompletedCode] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState<boolean | null>(null);
+  const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [email, setEmail] = useState("");
 
@@ -54,6 +55,7 @@ export function CartDrawer() {
   function handleClose() {
     setCompletedCode(null);
     setEmailSent(null);
+    setWhatsappUrl(null);
     closeCart();
   }
 
@@ -173,10 +175,11 @@ export function CartDrawer() {
       setSubmitting(false);
     }
 
-    window.open(
-      buildWhatsAppUrl(cartSnapshot, noteSnapshot, couponSnapshot, orderCode),
-      "_blank",
-      "noopener,noreferrer"
+    const url = buildWhatsAppUrl(
+      cartSnapshot,
+      noteSnapshot,
+      couponSnapshot,
+      orderCode
     );
 
     clearCart();
@@ -186,8 +189,17 @@ export function CartDrawer() {
     setCouponInput("");
     setCouponMsg("");
     setEmailSent(sent);
+    setWhatsappUrl(url);
     setCompletedCode(orderCode || "registrado");
   }
+
+  useEffect(() => {
+    if (!whatsappUrl || !completedCode) return;
+    const t = window.setTimeout(() => {
+      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    }, 1800);
+    return () => window.clearTimeout(t);
+  }, [whatsappUrl, completedCode]);
 
   const showSuccess = Boolean(completedCode) && items.length === 0;
 
@@ -204,11 +216,11 @@ export function CartDrawer() {
         <div className="flex items-center justify-between border-b border-[#e4d5c5] px-5 py-4">
           <div>
             <h2 className="font-serif text-2xl text-[#4a3b30]">
-              {showSuccess ? "Pedido realizado" : "Tu carrito"}
+              {showSuccess ? "Pedido registrado" : "Tu carrito"}
             </h2>
             <p className="text-xs text-[#8a7b6e]">
               {showSuccess
-                ? "Te redirigimos a WhatsApp"
+                ? "En unos segundos abrimos WhatsApp"
                 : items.length === 0
                   ? "Vacío"
                   : `${items.reduce((n, i) => n + i.quantity, 0)} ítem(s)`}
@@ -231,7 +243,7 @@ export function CartDrawer() {
               </div>
               <div>
                 <p className="font-serif text-2xl text-[#4a3b30]">
-                  ¡Pedido realizado!
+                  ¡Pedido registrado!
                 </p>
                 {completedCode && completedCode !== "registrado" ? (
                   <p className="mt-3 text-sm text-[#6d5c4d]">
@@ -239,7 +251,7 @@ export function CartDrawer() {
                   </p>
                 ) : (
                   <p className="mt-3 text-sm text-[#6d5c4d]">
-                    Abrimos WhatsApp para que completes la consulta.
+                    Pedido guardado. Te llevamos a WhatsApp para confirmarlo.
                   </p>
                 )}
                 {completedCode && completedCode !== "registrado" && (
@@ -249,19 +261,33 @@ export function CartDrawer() {
                 )}
                 <p className="mt-4 text-sm text-[#8a7b6e]">
                   {emailSent === true
-                    ? "Te enviamos el detalle al correo y abrimos WhatsApp para confirmarlo."
+                    ? "Te enviamos el detalle al correo. Ahora te llevamos a WhatsApp."
                     : emailSent === false
-                      ? "Abrimos WhatsApp para confirmarlo. Si no llega el correo, revisá spam o la config SMTP."
-                      : "Abrimos WhatsApp para confirmarlo. En unos segundos debería llegarte el correo con el detalle."}
+                      ? "Ahora te llevamos a WhatsApp. Si no llega el correo, revisá spam."
+                      : "En unos segundos te llevamos a WhatsApp. El detalle también llega por correo."}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="mt-2 rounded-full bg-[#4a3b30] px-6 py-3 text-sm font-medium text-white"
-              >
-                Seguir mirando
-              </button>
+              <div className="flex w-full flex-col gap-2">
+                {whatsappUrl && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      window.open(whatsappUrl, "_blank", "noopener,noreferrer")
+                    }
+                    className="btn-press flex w-full items-center justify-center gap-2 rounded-full bg-[#4a3b30] px-6 py-3 text-sm font-medium text-white"
+                  >
+                    <WhatsAppIcon className="h-5 w-5" />
+                    Ir a WhatsApp ahora
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="rounded-full border border-[#e4d5c5] bg-white px-6 py-3 text-sm text-[#5c4a3d]"
+                >
+                  Seguir mirando
+                </button>
+              </div>
             </div>
           ) : items.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
