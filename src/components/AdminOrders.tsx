@@ -40,8 +40,6 @@ type EditItem = {
 
 const STATUSES = [
   { value: "pending", label: "Pendiente" },
-  { value: "confirmed", label: "Confirmado" },
-  { value: "paid", label: "Pagado" },
   { value: "completed", label: "Completado" },
   { value: "cancelled", label: "Cancelado" },
 ];
@@ -51,6 +49,12 @@ const channelLabel: Record<string, string> = {
   mercadopago: "Mercado Pago",
   manual: "Manual",
 };
+
+function toOrderStatus(status: string) {
+  if (status === "cancelled") return "cancelled";
+  if (status === "pending") return "pending";
+  return "completed";
+}
 
 const inputClass =
   "mt-1.5 w-full rounded-xl border border-[#e8ddd3] bg-[#faf6f1] px-3 py-2.5 text-[#5c4a3d] outline-none transition focus:border-[#c9956a] focus:ring-2 focus:ring-[#c9956a]/20";
@@ -77,7 +81,7 @@ export function AdminOrders({ products }: { products: Product[] }) {
     customerName: "",
     customerPhone: "",
     customerNote: "",
-    status: "confirmed",
+    status: "completed",
     createdAt: "",
   });
   const [editItems, setEditItems] = useState<EditItem[]>([]);
@@ -137,7 +141,7 @@ export function AdminOrders({ products }: { products: Product[] }) {
       customerName: order.customerName || "",
       customerPhone: order.customerPhone || "",
       customerNote: order.customerNote || "",
-      status: order.status,
+      status: toOrderStatus(order.status),
       createdAt: toDatetimeLocalValue(order.createdAt),
     });
     setEditItems(
@@ -242,7 +246,7 @@ export function AdminOrders({ products }: { products: Product[] }) {
         customerName: manualName,
         customerPhone: manualPhone,
         customerNote: manualNote,
-        status: "confirmed",
+        status: "completed",
         items: [
           {
             id: product.id,
@@ -629,7 +633,7 @@ export function AdminOrders({ products }: { products: Product[] }) {
 
                     <div className="mt-4 flex flex-wrap items-center gap-2">
                       <select
-                        value={order.status}
+                        value={toOrderStatus(order.status)}
                         onChange={(e) => updateStatus(order.id, e.target.value)}
                         className="rounded-full border border-[#e4d5c5] bg-[#faf6f1] px-3 py-1.5 text-sm text-[#4a3b30]"
                       >

@@ -33,8 +33,8 @@ export function ProductCard({ product }: { product: Product }) {
 
   return (
     <>
-      <article className="product-card group overflow-hidden rounded-[1.35rem] bg-white shadow-[0_10px_30px_-18px_rgba(74,59,48,0.35)] ring-1 ring-[#e4d5c5]/80">
-        <div className="relative aspect-[5/4] overflow-hidden bg-[#efe4d8] sm:aspect-square">
+      <article className="product-card group flex h-full flex-col overflow-hidden rounded-[1.35rem] bg-white shadow-[0_10px_30px_-18px_rgba(74,59,48,0.35)] ring-1 ring-[#e4d5c5]/80">
+        <div className="relative aspect-[5/4] shrink-0 overflow-hidden bg-[#efe4d8] sm:aspect-square">
           {product.imageUrl ? (
             <button
               type="button"
@@ -70,22 +70,24 @@ export function ProductCard({ product }: { product: Product }) {
           )}
         </div>
 
-        <div className="flex flex-col gap-3 px-4 py-4 sm:px-5 sm:py-5">
-          <div>
+        <div className="flex flex-1 flex-col gap-3 px-4 py-4 sm:px-5 sm:py-5">
+          <div className="flex-1">
             <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#a67c52]">
               {product.category}
             </p>
             <h3 className="mt-1.5 font-serif text-[1.35rem] leading-tight text-[#4a3b30] sm:text-xl">
               {product.name}
             </h3>
-            {product.description && (
-              <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[#6d5c4d]">
+            {product.description ? (
+              <p className="mt-2 line-clamp-2 min-h-[2.75rem] text-sm leading-relaxed text-[#6d5c4d]">
                 {product.description}
               </p>
+            ) : (
+              <p className="mt-2 min-h-[2.75rem]" aria-hidden />
             )}
           </div>
 
-          <div className="mt-1 flex items-center justify-between gap-3 border-t border-[#efe4d8] pt-3.5">
+          <div className="mt-auto flex items-center justify-between gap-3 border-t border-[#efe4d8] pt-3.5">
             <p className="font-serif text-xl font-medium tracking-wide text-[#4a3b30]">
               {formatPrice(product.price)}
             </p>

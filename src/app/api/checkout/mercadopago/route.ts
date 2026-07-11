@@ -21,14 +21,28 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const discountPercent = body.discountPercent != null ? Number(body.discountPercent) : 0;
     const order = await createOrder({
       channel: "mercadopago",
       items,
       customerNote: note,
       status: "pending",
+      couponCode: body.couponCode ? String(body.couponCode) : null,
+      discountPercent,
     });
 
-    const preference = await createCheckoutPreference(items, {
+    const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+    const factor =
+      subtotal > 0 && order.total < subtotal ? order.total / subtotal : 1;
+    const pricedItems =
+      factor < 1
+        ? items.map((item) => ({
+            ...item,
+            price: Math.max(1, Math.round(item.price * factor)),
+          }))
+        : items;
+
+    const preference = await createCheckoutPreference(pricedItems, {
       orderId: order.id,
       orderCode: order.code,
     });

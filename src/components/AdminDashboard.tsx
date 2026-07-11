@@ -42,10 +42,10 @@ const channelLabel: Record<string, string> = {
 
 const statusLabel: Record<string, string> = {
   pending: "Pendiente",
-  confirmed: "Confirmado",
-  paid: "Pagado",
   completed: "Completado",
   cancelled: "Cancelado",
+  confirmed: "Completado",
+  paid: "Completado",
 };
 
 export function AdminDashboard({ onGoOrders }: { onGoOrders: () => void }) {
@@ -104,7 +104,7 @@ export function AdminDashboard({ onGoOrders }: { onGoOrders: () => void }) {
         <section className="rounded-2xl border border-[#e4d5c5] bg-white p-5">
           <h3 className="font-serif text-xl text-[#4a3b30]">Ventas (7 días)</h3>
           <p className="mt-1 text-sm text-[#8a7b6e]">
-            Confirmados, pagados o completados · todos los canales
+            Confirmados · completados · todos los canales
           </p>
           <ul className="mt-5 space-y-3">
             {data.last7.map((day) => {

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { daysAgo, startOfDay } from "@/lib/orders";
+import { daysAgo, startOfDay, COUNTED_STATUSES } from "@/lib/orders";
 
-const COUNTED = ["confirmed", "paid", "completed"];
+const COUNTED: string[] = [...COUNTED_STATUSES];
 
 export async function GET() {
   if (!(await isAdminAuthenticated())) {

@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       customerName: body.customerName ? String(body.customerName) : undefined,
       customerPhone: body.customerPhone ? String(body.customerPhone) : undefined,
       customerNote: body.customerNote ? String(body.customerNote) : "",
-      status: body.status || "confirmed",
+      status: body.status || "completed",
     });
 
     return NextResponse.json(order);

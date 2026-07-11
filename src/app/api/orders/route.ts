@@ -17,6 +17,8 @@ export async function POST(request: NextRequest) {
       items,
       customerNote: body.note ? String(body.note) : "",
       status: "pending",
+      couponCode: body.couponCode ? String(body.couponCode) : null,
+      discountPercent: body.discountPercent != null ? Number(body.discountPercent) : 0,
     });
 
     return NextResponse.json({

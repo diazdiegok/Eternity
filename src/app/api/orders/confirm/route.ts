@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const orderId = body.orderId ? String(body.orderId) : "";
-  const status = body.status === "paid" ? "paid" : "confirmed";
+  const status = "completed";
 
   if (!orderId) {
     return NextResponse.json({ error: "orderId requerido" }, { status: 400 });

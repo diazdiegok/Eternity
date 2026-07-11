@@ -10,10 +10,20 @@ import {
 } from "react";
 import type { CartItem } from "@/lib/whatsapp";
 
+type AppliedCoupon = {
+  code: string;
+  percentOff: number;
+};
+
 type CartContextValue = {
   items: CartItem[];
   count: number;
+  subtotal: number;
+  discountAmount: number;
   total: number;
+  coupon: AppliedCoupon | null;
+  applyCoupon: (coupon: AppliedCoupon) => void;
+  clearCoupon: () => void;
   isOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
@@ -25,9 +35,11 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null);
 const STORAGE_KEY = "eternity-cart";
+const COUPON_KEY = "eternity-coupon";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
@@ -35,6 +47,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) setItems(JSON.parse(saved));
+      const savedCoupon = localStorage.getItem(COUPON_KEY);
+      if (savedCoupon) setCoupon(JSON.parse(savedCoupon));
     } catch {
       /* ignore */
     }
@@ -45,6 +59,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (coupon) localStorage.setItem(COUPON_KEY, JSON.stringify(coupon));
+    else localStorage.removeItem(COUPON_KEY);
+  }, [coupon, hydrated]);
 
   const addItem = useCallback(
     (item: Omit<CartItem, "quantity">, quantity = 1) => {
@@ -76,23 +96,47 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
-  const clearCart = useCallback(() => setItems([]), []);
+  const clearCart = useCallback(() => {
+    setItems([]);
+    setCoupon(null);
+  }, []);
+
+  const applyCoupon = useCallback((next: AppliedCoupon) => {
+    setCoupon(next);
+  }, []);
+
+  const clearCoupon = useCallback(() => setCoupon(null), []);
 
   const count = useMemo(
     () => items.reduce((sum, item) => sum + item.quantity, 0),
     [items]
   );
 
-  const total = useMemo(
+  const subtotal = useMemo(
     () => items.reduce((sum, item) => sum + item.price * item.quantity, 0),
     [items]
+  );
+
+  const discountAmount = useMemo(() => {
+    if (!coupon?.percentOff) return 0;
+    return Math.round((subtotal * coupon.percentOff) / 100);
+  }, [subtotal, coupon]);
+
+  const total = useMemo(
+    () => Math.max(0, subtotal - discountAmount),
+    [subtotal, discountAmount]
   );
 
   const value = useMemo(
     () => ({
       items,
       count,
+      subtotal,
+      discountAmount,
       total,
+      coupon,
+      applyCoupon,
+      clearCoupon,
       isOpen,
       openCart: () => setIsOpen(true),
       closeCart: () => setIsOpen(false),
@@ -101,7 +145,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       updateQuantity,
       clearCart,
     }),
-    [items, count, total, isOpen, addItem, removeItem, updateQuantity, clearCart]
+    [
+      items,
+      count,
+      subtotal,
+      discountAmount,
+      total,
+      coupon,
+      applyCoupon,
+      clearCoupon,
+      isOpen,
+      addItem,
+      removeItem,
+      updateQuantity,
+      clearCart,
+    ]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

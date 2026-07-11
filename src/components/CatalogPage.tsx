@@ -112,10 +112,14 @@ export function CatalogPage() {
           ) : (
             <div
               key={category}
-              className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-7"
+              className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-7"
             >
               {filtered.map((product, index) => (
-                <Reveal key={product.id} delay={Math.min(index, 6) * 60}>
+                <Reveal
+                  key={product.id}
+                  className="h-full"
+                  delay={Math.min(index % 3, 2) * 40}
+                >
                   <ProductCard product={product} />
                 </Reveal>
               ))}

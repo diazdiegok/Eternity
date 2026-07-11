@@ -8,7 +8,12 @@ import { WhatsAppIcon } from "@/components/Icons";
 export function CartDrawer() {
   const {
     items,
+    subtotal,
+    discountAmount,
     total,
+    coupon,
+    applyCoupon,
+    clearCoupon,
     isOpen,
     closeCart,
     removeItem,
@@ -16,6 +21,9 @@ export function CartDrawer() {
     clearCart,
   } = useCart();
   const [note, setNote] = useState("");
+  const [couponInput, setCouponInput] = useState("");
+  const [couponMsg, setCouponMsg] = useState("");
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [mpEnabled, setMpEnabled] = useState(false);
   const [loadingMp, setLoadingMp] = useState(false);
 
@@ -37,13 +45,44 @@ export function CartDrawer() {
 
   if (!isOpen) return null;
 
+  async function handleApplyCoupon() {
+    setApplyingCoupon(true);
+    setCouponMsg("");
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponInput }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCouponMsg(data.error || "Cupón inválido");
+        return;
+      }
+      applyCoupon({ code: data.code, percentOff: data.percentOff });
+      setCouponInput("");
+      setCouponMsg(`Cupón ${data.code} aplicado (−${data.percentOff}%)`);
+    } catch {
+      setCouponMsg("No se pudo validar el cupón");
+    } finally {
+      setApplyingCoupon(false);
+    }
+  }
+
+  const orderPayload = {
+    items,
+    note,
+    couponCode: coupon?.code || null,
+    discountPercent: coupon?.percentOff || 0,
+  };
+
   async function handleMercadoPago() {
     setLoadingMp(true);
     try {
       const res = await fetch("/api/checkout/mercadopago", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, note }),
+        body: JSON.stringify(orderPayload),
       });
       const data = await res.json();
       if (data.checkoutUrl) {
@@ -64,12 +103,26 @@ export function CartDrawer() {
       await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, channel: "whatsapp", note }),
+        body: JSON.stringify({ ...orderPayload, channel: "whatsapp" }),
       });
     } catch {
       // Si falla el registro, igual abrimos WhatsApp
     }
-    window.open(buildWhatsAppUrl(items, note), "_blank", "noopener,noreferrer");
+    window.open(
+      buildWhatsAppUrl(
+        items,
+        note,
+        coupon
+          ? {
+              code: coupon.code,
+              percentOff: coupon.percentOff,
+              amount: discountAmount,
+            }
+          : null
+      ),
+      "_blank",
+      "noopener,noreferrer"
+    );
   }
 
   return (
@@ -170,13 +223,70 @@ export function CartDrawer() {
               className="w-full rounded-2xl border border-[#e4d5c5] bg-white px-3 py-2.5 text-sm text-[#4a3b30] outline-none transition focus:border-[#a67c52] focus:ring-2 focus:ring-[#a67c52]/20"
             />
 
-            <div className="flex items-center justify-between">
-              <span className="text-sm uppercase tracking-[0.16em] text-[#8a7b6e]">
-                Total
-              </span>
-              <span className="font-serif text-2xl text-[#4a3b30]">
-                {formatPrice(total)}
-              </span>
+            <div className="space-y-2">
+              <label className="text-xs font-medium uppercase tracking-[0.14em] text-[#8a7b6e]">
+                Cupón de descuento
+              </label>
+              {coupon ? (
+                <div className="flex items-center justify-between rounded-2xl border border-[#d4b896] bg-[#f5ebe3] px-3 py-2.5 text-sm">
+                  <span className="text-[#4a3b30]">
+                    <strong>{coupon.code}</strong> (−{coupon.percentOff}%)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearCoupon();
+                      setCouponMsg("");
+                    }}
+                    className="text-[#a67c52] hover:text-[#4a3b30]"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    placeholder="Código"
+                    className="min-w-0 flex-1 rounded-2xl border border-[#e4d5c5] bg-white px-3 py-2.5 text-sm text-[#4a3b30] outline-none focus:border-[#a67c52]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    disabled={applyingCoupon || !couponInput.trim()}
+                    className="rounded-full bg-[#4a3b30] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                  >
+                    {applyingCoupon ? "..." : "Aplicar"}
+                  </button>
+                </div>
+              )}
+              {couponMsg && (
+                <p className="text-xs text-[#6d5c4d]">{couponMsg}</p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              {discountAmount > 0 && (
+                <>
+                  <div className="flex items-center justify-between text-sm text-[#8a7b6e]">
+                    <span>Subtotal</span>
+                    <span>{formatPrice(subtotal)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-[#a67c52]">
+                    <span>Descuento</span>
+                    <span>−{formatPrice(discountAmount)}</span>
+                  </div>
+                </>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-sm uppercase tracking-[0.16em] text-[#8a7b6e]">
+                  Total
+                </span>
+                <span className="font-serif text-2xl text-[#4a3b30]">
+                  {formatPrice(total)}
+                </span>
+              </div>
             </div>
 
             <button

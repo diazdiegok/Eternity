@@ -6,6 +6,7 @@ import Link from "next/link";
 import { formatPrice } from "@/lib/whatsapp";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { AdminOrders } from "@/components/AdminOrders";
+import { AdminCoupons } from "@/components/AdminCoupons";
 
 type Product = {
   id: string;
@@ -50,9 +51,9 @@ export function AdminPanel() {
   const [selectedFileName, setSelectedFileName] = useState("");
   const [categoryMode, setCategoryMode] = useState<"preset" | "custom">("preset");
   const [customCategory, setCustomCategory] = useState("");
-  const [tab, setTab] = useState<"dashboard" | "orders" | "products" | "categories">(
-    "dashboard"
-  );
+  const [tab, setTab] = useState<
+    "dashboard" | "orders" | "products" | "categories" | "coupons"
+  >("dashboard");
   const [renameFrom, setRenameFrom] = useState("");
   const [renameTo, setRenameTo] = useState("");
   const [renaming, setRenaming] = useState(false);
@@ -387,6 +388,7 @@ export function AdminPanel() {
             ["orders", "Ventas"],
             ["products", "Productos"],
             ["categories", "Categorías"],
+            ["coupons", "Cupones"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -409,6 +411,8 @@ export function AdminPanel() {
       )}
 
       {tab === "orders" && <AdminOrders products={products} />}
+
+      {tab === "coupons" && <AdminCoupons />}
 
       {tab === "categories" && (
         <form

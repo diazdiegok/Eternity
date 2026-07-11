@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-const ALLOWED = ["pending", "confirmed", "paid", "completed", "cancelled"];
+const ALLOWED = ["pending", "completed", "cancelled"];
 
 type ItemInput = {
   productId?: string | null;
