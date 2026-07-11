@@ -1,38 +1,41 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 
-type Product = {
-  category: string;
+type CategoryRow = {
+  id: string;
+  name: string;
+  count: number;
 };
 
 const inputClass =
   "mt-1.5 w-full rounded-xl border border-[#e8ddd3] bg-[#faf6f1] px-3 py-2.5 text-[#5c4a3d] outline-none transition focus:border-[#c9956a] focus:ring-2 focus:ring-[#c9956a]/20";
 
 export function AdminCategories({
-  products,
   onChanged,
 }: {
-  products: Product[];
   onChanged: () => Promise<void> | void;
 }) {
-  const categories = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const p of products) {
-      const name = p.category?.trim() || "General";
-      counts.set(name, (counts.get(name) || 0) + 1);
-    }
-    return [...counts.entries()]
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => a.name.localeCompare(b.name, "es"));
-  }, [products]);
-
+  const [categories, setCategories] = useState<CategoryRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newName, setNewName] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
   const [moveTo, setMoveTo] = useState("General");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch("/api/admin/categories");
+    if (res.ok) setCategories(await res.json());
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   function startEdit(name: string) {
     setEditing(name);
@@ -48,6 +51,35 @@ export function AdminCategories({
       categories.find((c) => c.name !== name)?.name || "General";
     setMoveTo(fallback);
     setMessage("");
+  }
+
+  async function handleCreate(e: FormEvent) {
+    e.preventDefault();
+    const name = newName.trim();
+    if (!name) {
+      setMessage("Escribí un nombre");
+      return;
+    }
+
+    setBusy(true);
+    setMessage("");
+    const res = await fetch("/api/admin/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    const json = await res.json().catch(() => ({}));
+    setBusy(false);
+
+    if (!res.ok) {
+      setMessage(json.error || "No se pudo crear");
+      return;
+    }
+
+    setNewName("");
+    setMessage(`Categoría creada: "${json.name}"`);
+    await load();
+    await onChanged();
   }
 
   async function handleSaveEdit(e: FormEvent) {
@@ -82,6 +114,7 @@ export function AdminCategories({
       `Categoría actualizada: "${editing}" → "${to}" (${json.updated || 0} productos)`
     );
     setEditing(null);
+    await load();
     await onChanged();
   }
 
@@ -110,11 +143,41 @@ export function AdminCategories({
         : `Eliminada "${deleting}"`
     );
     setDeleting(null);
+    await load();
     await onChanged();
   }
 
   return (
     <div className="space-y-6">
+      <form
+        onSubmit={handleCreate}
+        className="rounded-2xl border border-[#e8ddd3] bg-white p-6 shadow-sm"
+      >
+        <h2 className="font-serif text-xl text-stone-800">Nueva categoría</h2>
+        <p className="mt-1 text-sm text-[#9a8b7e]">
+          Creá categorías acá. En Productos solo se eligen las existentes.
+        </p>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+          <label className="block flex-1 text-sm font-medium text-[#5c4a3d]">
+            Nombre
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Ej: Plata 925"
+              className={inputClass}
+              required
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={busy}
+            className="rounded-full bg-[#5c4a3d] px-5 py-2.5 text-sm text-white disabled:opacity-50"
+          >
+            {busy ? "Creando..." : "Crear categoría"}
+          </button>
+        </div>
+      </form>
+
       <div className="rounded-2xl border border-[#e8ddd3] bg-white p-6 shadow-sm">
         <h2 className="font-serif text-xl text-stone-800">Categorías</h2>
         <p className="mt-1 text-sm text-[#9a8b7e]">
@@ -122,9 +185,11 @@ export function AdminCategories({
           mueven a otra.
         </p>
 
-        {categories.length === 0 ? (
+        {loading ? (
+          <p className="mt-4 text-sm text-[#8a7b6e]">Cargando...</p>
+        ) : categories.length === 0 ? (
           <p className="mt-4 text-sm text-[#8a7b6e]">
-            Todavía no hay categorías (creá un producto primero).
+            Todavía no hay categorías. Creá la primera arriba.
           </p>
         ) : (
           <ul className="mt-5 space-y-3">

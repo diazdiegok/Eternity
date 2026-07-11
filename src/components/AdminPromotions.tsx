@@ -118,9 +118,12 @@ export function AdminPromotions({ categories }: { categories: string[] }) {
 
         <div className="mt-4">
           <p className="text-sm font-medium text-[#5c4a3d]">Categorías</p>
+          <p className="mt-0.5 text-xs text-[#9a8b7e]">
+            Tocá para activar o desactivar. Solo las seleccionadas entran en la promo.
+          </p>
           {categoryList.length === 0 ? (
             <p className="mt-2 text-sm text-[#9a8b7e]">
-              Todavía no hay categorías en productos.
+              Todavía no hay categorías. Creálas en la pestaña Categorías.
             </p>
           ) : (
             <div className="mt-2 flex flex-wrap gap-2">
@@ -137,7 +140,7 @@ export function AdminPromotions({ categories }: { categories: string[] }) {
                         : "bg-[#faf6f1] text-[#5c4a3d] ring-1 ring-[#e8ddd3]"
                     }`}
                   >
-                    {cat}
+                    {on ? `✓ ${cat}` : cat}
                   </button>
                 );
               })}

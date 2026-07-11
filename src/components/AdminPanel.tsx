@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { formatPrice } from "@/lib/whatsapp";
@@ -21,14 +21,11 @@ type Product = {
   active: boolean;
 };
 
-const CATEGORY_SUGGESTIONS = ["Sin Bordes", "Bordes de Acero", "Plata 925", "Mascotas"];
-const CUSTOM_CATEGORY = "__custom__";
-
 const emptyForm = {
   name: "",
   description: "",
   price: "",
-  category: "Sin Bordes",
+  category: "",
   featured: false,
   active: true,
   imageUrl: "" as string | null,
@@ -51,8 +48,7 @@ export function AdminPanel() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [selectedFileName, setSelectedFileName] = useState("");
-  const [categoryMode, setCategoryMode] = useState<"preset" | "custom">("preset");
-  const [customCategory, setCustomCategory] = useState("");
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [tab, setTab] = useState<
     | "dashboard"
     | "orders"
@@ -62,10 +58,18 @@ export function AdminPanel() {
     | "promotions"
   >("dashboard");
 
-  const categoryOptions = useMemo(() => {
-    const fromProducts = products.map((p) => p.category);
-    return [...new Set([...CATEGORY_SUGGESTIONS, ...fromProducts])].sort();
-  }, [products]);
+  async function loadCategories() {
+    const res = await fetch("/api/admin/categories");
+    if (!res.ok) return;
+    const rows = (await res.json()) as { name: string }[];
+    const names = rows.map((r) => r.name);
+    setCategoryOptions(names);
+    setForm((f) => {
+      if (f.category && names.includes(f.category)) return f;
+      if (editingId && f.category) return f;
+      return { ...f, category: names[0] || "" };
+    });
+  }
 
   async function loadProducts() {
     const res = await fetch("/api/admin/products");
@@ -75,6 +79,7 @@ export function AdminPanel() {
     }
     setAuthenticated(true);
     setProducts(await res.json());
+    await loadCategories();
   }
 
   useEffect(() => {
@@ -147,9 +152,6 @@ export function AdminPanel() {
 
   function startEdit(product: Product) {
     setEditingId(product.id);
-    const isPreset = categoryOptions.includes(product.category);
-    setCategoryMode(isPreset ? "preset" : "custom");
-    setCustomCategory(isPreset ? "" : product.category);
     setSelectedFileName("");
     setForm({
       name: product.name,
@@ -165,22 +167,19 @@ export function AdminPanel() {
 
   function resetForm() {
     setEditingId(null);
-    setForm(emptyForm);
-    setCategoryMode("preset");
-    setCustomCategory("");
+    setForm({
+      ...emptyForm,
+      category: categoryOptions[0] || "",
+    });
     setSelectedFileName("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  function getFinalCategory() {
-    return categoryMode === "custom" ? customCategory.trim() : form.category;
-  }
-
   async function handleSave(e: FormEvent) {
     e.preventDefault();
-    const category = getFinalCategory();
+    const category = form.category.trim();
     if (!category) {
-      setMessage("Elegí o escribí una categoría");
+      setMessage("Elegí una categoría (creala en la pestaña Categorías)");
       return;
     }
 
@@ -383,7 +382,11 @@ export function AdminPanel() {
       )}
 
       {tab === "categories" && (
-        <AdminCategories products={products} onChanged={loadProducts} />
+        <AdminCategories
+          onChanged={async () => {
+            await loadProducts();
+          }}
+        />
       )}
 
       {tab === "products" && (
@@ -430,32 +433,34 @@ export function AdminPanel() {
 
           <div className="block text-sm font-medium text-[#5c4a3d]">
             Categoría
-            <select
-              value={categoryMode === "custom" ? CUSTOM_CATEGORY : form.category}
-              onChange={(e) => {
-                if (e.target.value === CUSTOM_CATEGORY) {
-                  setCategoryMode("custom");
-                } else {
-                  setCategoryMode("preset");
-                  setForm({ ...form, category: e.target.value });
-                }
-              }}
-              className={`${inputClass} cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22%3E%3Cpath fill=%22%235c4a3d%22 d=%22M1 1l5 5 5-5%22/%3E%3C/svg%3E')] bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-10`}
-            >
-              {categoryOptions.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-              <option value={CUSTOM_CATEGORY}>+ Nueva categoría...</option>
-            </select>
-            {categoryMode === "custom" && (
-              <input
-                value={customCategory}
-                onChange={(e) => setCustomCategory(e.target.value)}
-                placeholder="Nombre de la nueva categoría"
-                className={`${inputClass} mt-2`}
-              />
+            {categoryOptions.length === 0 ? (
+              <p className="mt-1.5 text-sm font-normal text-[#9a8b7e]">
+                No hay categorías. Creálas en la pestaña{" "}
+                <button
+                  type="button"
+                  onClick={() => setTab("categories")}
+                  className="underline"
+                >
+                  Categorías
+                </button>
+                .
+              </p>
+            ) : (
+              <select
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                className={`${inputClass} cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22%3E%3Cpath fill=%22%235c4a3d%22 d=%22M1 1l5 5 5-5%22/%3E%3C/svg%3E')] bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-10`}
+                required
+              >
+                {!categoryOptions.includes(form.category) && form.category && (
+                  <option value={form.category}>{form.category}</option>
+                )}
+                {categoryOptions.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
             )}
           </div>
 
