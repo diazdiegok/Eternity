@@ -104,31 +104,40 @@ export function AdminDashboard({ onGoOrders }: { onGoOrders: () => void }) {
         <section className="rounded-2xl border border-[#e4d5c5] bg-white p-5">
           <h3 className="font-serif text-xl text-[#4a3b30]">Ventas (7 días)</h3>
           <p className="mt-1 text-sm text-[#8a7b6e]">
-            Todos los canales · confirmados, pagados o completados
+            Confirmados, pagados o completados · todos los canales
           </p>
-          <div className="mt-6 flex h-44 items-end gap-2">
+          <ul className="mt-5 space-y-3">
             {data.last7.map((day) => {
-              const pct =
-                day.total > 0 ? Math.max((day.total / maxBar) * 100, 12) : 0;
+              const pct = day.total > 0 ? Math.max((day.total / maxBar) * 100, 8) : 0;
               return (
-                <div
-                  key={day.date}
-                  className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2"
-                >
-                  <div className="flex w-full flex-1 items-end">
+                <li key={day.date}>
+                  <div className="mb-1 flex items-baseline justify-between gap-2 text-sm">
+                    <span className="capitalize text-[#6d5c4d]">{day.label}</span>
+                    <span className="font-medium text-[#4a3b30]">
+                      {day.total > 0 ? formatPrice(day.total) : "—"}
+                      {day.count > 0 && (
+                        <span className="ml-2 font-normal text-[#8a7b6e]">
+                          · {day.count} {day.count === 1 ? "venta" : "ventas"}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-[#f0e6db]">
                     <div
-                      className="w-full rounded-t-md bg-[#4a3b30] transition"
-                      style={{ height: `${pct}%` }}
-                      title={`${formatPrice(day.total)} · ${day.count} ventas`}
+                      className="h-full rounded-full bg-[#4a3b30] transition-all"
+                      style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <span className="text-[10px] capitalize text-[#8a7b6e]">
-                    {day.label}
-                  </span>
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
+          <p className="mt-4 border-t border-[#efe4d8] pt-3 text-sm text-[#6d5c4d]">
+            Total 7 días:{" "}
+            <strong className="text-[#4a3b30]">
+              {formatPrice(data.last7.reduce((s, d) => s + d.total, 0))}
+            </strong>
+          </p>
         </section>
 
         <section className="rounded-2xl border border-[#e4d5c5] bg-white p-5">
