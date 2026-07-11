@@ -11,7 +11,14 @@ if (!process.env.DATABASE_URL) {
 }
 
 console.log("Aplicando migraciones...");
-execSync("npx prisma migrate deploy", { stdio: "inherit", cwd: root });
+execSync("npx prisma migrate deploy", {
+  stdio: "inherit",
+  cwd: root,
+  env: {
+    ...process.env,
+    DATABASE_URL: process.env.DIRECT_URL || process.env.DATABASE_URL,
+  },
+});
 
 console.log("Verificando productos iniciales...");
 try {

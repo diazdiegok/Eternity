@@ -22,99 +22,68 @@ npm run totp:setup
 
 Escaneá el QR (`totp-qr.png`) con Microsoft Authenticator. Copiá el valor de `ADMIN_TOTP_SECRET` del `.env` a Render.
 
-**Importante:** elegí una contraseña fuerte en Render. No uses `admin123` en producción.
-
 ---
 
-## Persistencia gratis (sin pagar Starter)
+## Persistencia recomendada: Neon (gratis, no vence a los 30 días)
 
-El Web Service Free **no guarda archivos en disco**. Ventas y fotos viven en **Postgres Free** del mismo Render.
+El Web Service sigue en **Render Free**. La base de datos vive en **[Neon](https://neon.tech)** (Postgres gratis).
 
-### 1. Subir el proyecto a GitHub
+### 1. Crear proyecto en Neon
 
-```bash
-cd eternity-catalog
-git add .
-git commit -m "Catálogo Eternity Recuerdos"
-git push
-```
+1. Entrá a [console.neon.tech](https://console.neon.tech) y registrate (GitHub está bien)
+2. **Create a project** → nombre `eternity` → región cercana
+3. Tocá **Connect** → copiá la connection string  
+   (preferí la **directa**, sin `-pooler`, o la pooled; ambas sirven)
+4. Asegurate de que termine con `?sslmode=require`
 
-### 2. Crear Postgres Free en Render
-
-1. **New +** → **PostgreSQL**
-2. Name: `eternity-db`
-3. Plan: **Free**
-4. Create
-
-> El Postgres Free **vence a los 30 días**. Antes de eso exportá o creá otra DB.
-
-### 3. Crear / configurar Web Service
-
-1. **New +** → **Web Service** (o usá el existente)
-2. Conectá el repo
-3. Configuración:
+### 2. Web Service en Render (Free)
 
 | Campo | Valor |
 |-------|--------|
-| **Name** | `eternity-recuerdos` |
-| **Runtime** | Node |
-| **Build Command** | `npm install && npm run build` |
-| **Start Command** | `npm start` |
+| **Build** | `npm install && npm run build` |
+| **Start** | `npm start` |
 | **Plan** | Free |
 
-### 4. Variables de entorno
+Environment:
 
 ```
-DATABASE_URL=<Internal Database URL del Postgres>
-ADMIN_PASSWORD=TuContraseñaSegura123!
-ADMIN_SECRET=una-clave-larga-aleatoria-minimo-32-caracteres
-ADMIN_TOTP_SECRET=el-mismo-secreto-que-en-tu-env-local
+DATABASE_URL=<connection string de Neon>
+ADMIN_PASSWORD=...
+ADMIN_SECRET=...
+ADMIN_TOTP_SECRET=...
 NEXT_PUBLIC_BASE_URL=https://tu-app.onrender.com
 ```
 
-Cómo obtener `DATABASE_URL`: Postgres → **Info** → **Internal Database URL** → copiar → pegar en el Web Service → Environment.
+### 3. Migrar datos desde Render Postgres → Neon (una vez)
 
-Opcional (Mercado Pago):
+Si ya tenías datos en el Postgres Free de Render:
 
+1. En Render → `eternity-db` → **Connections** → copiá **External Database URL**
+2. En tu PC, en la carpeta del proyecto:
+
+```powershell
+$env:SOURCE_DATABASE_URL="pegá-acá-la-External-URL-de-Render"
+$env:TARGET_DATABASE_URL="pegá-acá-la-URL-de-Neon"
+node scripts/migrate-db.mjs
 ```
-MP_ACCESS_TOKEN=APP_USR-tu-token
-MP_SANDBOX=false
-```
 
-**No hace falta** `DATA_DIR` ni disco persistente.
+3. En Render → Web Service → Environment → `DATABASE_URL` = URL de Neon → Save/deploy
+4. Cuando confirmes que el catálogo y ventas están bien, podés **borrar** el Postgres de Render
 
-### 5. Deploy
+### 4. Probar
 
-Clic en **Deploy**. Al arrancar:
-
-- Corre migraciones
-- Si la base está vacía, carga los productos iniciales
-- Restaura la venta manual `ET-5464` si no existe
-
-### 6. Probar
-
-- Catálogo: `https://tu-app.onrender.com`
-- Admin: `https://tu-app.onrender.com/admin`
+- Catálogo + admin
+- Productos, fotos y ventas deben verse igual
 
 ---
 
-## Notas importantes
+## Notas
 
-### Plan Free
-- La app se duerme tras ~15 min sin visitas
-- La DB Postgres Free **sí** sobrevive deploy/sleep
-- Postgres Free expira a ~30 días (renová o migrá)
+- Render Free se duerme sin visitas; **Neon no borra** tus datos por eso
+- Fotos del admin viven en la tabla `Media` (Postgres)
+- Admin → Productos → **Editar categoría** para renombrar
+- No corras `npm run db:seed` en producción (pisa el catálogo)
 
-### Imágenes
-- Fotos del catálogo seed: en el repo (`public/images/products/`)
-- Fotos subidas desde el admin: en Postgres (tabla `Media`)
+### Alternativa: Postgres Free de Render
 
-### Categorías
-- En admin → Productos → **Editar categoría** renombrás y se actualiza en todos los productos
-
-### Cambiar contraseña admin
-1. Render → Environment → editá `ADMIN_PASSWORD`
-2. Save → redeploy
-
-### Dominio propio (opcional)
-En Render → **Settings** → **Custom Domain**.
+Vence ~30 días. Solo para pruebas cortas. Preferí Neon.
