@@ -16,22 +16,37 @@ export function formatPrice(amount: number) {
   }).format(amount);
 }
 
-export function buildWhatsAppUrl(
-  items: CartItem[],
-  note?: string,
-  discount?: { code: string; percentOff: number; amount: number } | null,
-  orderCode?: string | null
-) {
+type WhatsAppOrderOptions = {
+  items: CartItem[];
+  note?: string;
+  discount?: { code: string; percentOff: number; amount: number } | null;
+  orderCode?: string | null;
+  /** Pedido registrado (transferencia/comprobante) vs ya pagado con MP */
+  paid?: boolean;
+};
+
+export function buildWhatsAppUrl(options: WhatsAppOrderOptions) {
+  const { items, note, discount, orderCode, paid = false } = options;
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const total = discount ? Math.max(0, subtotal - discount.amount) : subtotal;
+  const brand = SITE.emailBrand;
 
-  const lines = [
-    `Hola! Quiero consultar/comprar en *${SITE.brandFull}*:`,
-    "",
-  ];
+  const lines: string[] = [];
+
+  if (paid) {
+    lines.push(
+      `Hola! Acabo de *pagar* un pedido en *${brand}*.`,
+      ""
+    );
+  } else {
+    lines.push(
+      `Hola! Realicé un *pedido* en *${brand}*.`,
+      ""
+    );
+  }
 
   if (orderCode) {
-    lines.push(`Pedido *${orderCode}*`, "");
+    lines.push(`N° de pedido: *${orderCode}*`, "");
   }
 
   lines.push(
@@ -54,6 +69,20 @@ export function buildWhatsAppUrl(
 
   if (note?.trim()) {
     lines.push("", `Nota: ${note.trim()}`);
+  }
+
+  if (paid) {
+    lines.push(
+      "",
+      "✅ El pago ya fue realizado por Mercado Pago.",
+      "Quedo a la espera de la confirmación y el envío."
+    );
+  } else {
+    lines.push(
+      "",
+      "📎 *Importante:* voy a adjuntar / adjunto el *comprobante de pago*.",
+      "Por favor confirmen cuando lo reciban. ¡Gracias!"
+    );
   }
 
   const text = encodeURIComponent(lines.join("\n"));

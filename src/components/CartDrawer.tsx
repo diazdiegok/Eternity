@@ -119,6 +119,25 @@ export function CartDrawer() {
       });
       const data = await res.json();
       if (data.checkoutUrl) {
+        try {
+          sessionStorage.setItem(
+            "eternity-mp-order",
+            JSON.stringify({
+              code: data.orderCode,
+              items,
+              note,
+              coupon: coupon
+                ? {
+                    code: coupon.code,
+                    percentOff: coupon.percentOff,
+                    amount: discountAmount,
+                  }
+                : null,
+            })
+          );
+        } catch {
+          /* ignore */
+        }
         clearCart();
         setEmail("");
         window.location.href = data.checkoutUrl;
@@ -182,12 +201,13 @@ export function CartDrawer() {
       setSubmitting(false);
     }
 
-    const url = buildWhatsAppUrl(
-      cartSnapshot,
-      noteSnapshot,
-      couponSnapshot,
-      orderCode
-    );
+    const url = buildWhatsAppUrl({
+      items: cartSnapshot,
+      note: noteSnapshot,
+      discount: couponSnapshot,
+      orderCode,
+      paid: false,
+    });
 
     clearCart();
     clearCoupon();
@@ -219,7 +239,7 @@ export function CartDrawer() {
             </h2>
             <p className="text-xs text-[#8a7b6e]">
               {showSuccess
-                ? "En unos segundos abrimos WhatsApp"
+                ? "Adjuntá el comprobante por WhatsApp"
                 : items.length === 0
                   ? "Vacío"
                   : `${items.reduce((n, i) => n + i.quantity, 0)} ítem(s)`}
@@ -260,8 +280,8 @@ export function CartDrawer() {
                 )}
                 <p className="mt-4 text-sm text-[#8a7b6e]">
                   {emailSent
-                    ? "Te enviamos el detalle al correo. En unos segundos te llevamos a WhatsApp."
-                    : "Pedido guardado. En unos segundos te llevamos a WhatsApp. Si no llega el correo, avisanos."}
+                    ? "Te enviamos el detalle al correo. En WhatsApp avisá el pedido y adjuntá el comprobante de pago."
+                    : "Pedido guardado. En WhatsApp avisá el pedido y adjuntá el comprobante de pago."}
                 </p>
               </div>
               <div className="flex w-full flex-col gap-2">
@@ -274,7 +294,7 @@ export function CartDrawer() {
                     className="btn-press flex w-full items-center justify-center gap-2 rounded-full bg-[#4a3b30] px-6 py-3 text-sm font-medium text-white"
                   >
                     <WhatsAppIcon className="h-5 w-5" />
-                    Ir a WhatsApp ahora
+                    Avisar pedido por WhatsApp
                   </button>
                 )}
                 <button
@@ -450,25 +470,40 @@ export function CartDrawer() {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleWhatsApp}
-              disabled={submitting}
-              className="btn-press flex w-full items-center justify-center gap-2 rounded-full bg-[#4a3b30] py-3.5 font-medium text-[#f7f1ea] shadow-[0_12px_28px_-14px_rgba(74,59,48,0.8)] hover:bg-[#5c4a3d] disabled:opacity-60"
-            >
-              <WhatsAppIcon className="h-5 w-5" />
-              {submitting ? "Registrando..." : "Finalizar por WhatsApp"}
-            </button>
-
             {mpEnabled && (
               <button
                 type="button"
                 onClick={handleMercadoPago}
-                disabled={loadingMp}
-                className="btn-press w-full rounded-full border border-[#009ee3] py-3 font-medium text-[#009ee3] transition hover:bg-[#009ee3] hover:text-white disabled:opacity-60"
+                disabled={loadingMp || submitting}
+                className="btn-press w-full rounded-full bg-[#009ee3] py-3.5 font-medium text-white shadow-[0_12px_28px_-14px_rgba(0,158,227,0.7)] transition hover:bg-[#008bd0] disabled:opacity-60"
               >
                 {loadingMp ? "Redirigiendo..." : "Pagar con Mercado Pago"}
               </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleWhatsApp}
+              disabled={submitting || loadingMp}
+              className={`btn-press flex w-full items-center justify-center gap-2 rounded-full py-3.5 font-medium disabled:opacity-60 ${
+                mpEnabled
+                  ? "border border-[#e4d5c5] bg-white text-[#4a3b30] hover:bg-[#faf6f1]"
+                  : "bg-[#4a3b30] text-[#f7f1ea] shadow-[0_12px_28px_-14px_rgba(74,59,48,0.8)] hover:bg-[#5c4a3d]"
+              }`}
+            >
+              <WhatsAppIcon className="h-5 w-5" />
+              {submitting
+                ? "Registrando..."
+                : mpEnabled
+                  ? "Pagué por transferencia (WhatsApp)"
+                  : "Finalizar pedido por WhatsApp"}
+            </button>
+
+            {mpEnabled && (
+              <p className="text-center text-xs text-[#8a7b6e]">
+                Con transferencia: registramos el pedido y te pedimos adjuntar el
+                comprobante por WhatsApp.
+              </p>
             )}
 
             <button

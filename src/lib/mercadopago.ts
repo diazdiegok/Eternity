@@ -1,15 +1,15 @@
-import { MercadoPagoConfig, Preference } from "mercadopago";
+import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
 import { getBaseUrl } from "./config";
 import type { CartItem } from "./whatsapp";
 
 function getClient() {
-  const token = process.env.MP_ACCESS_TOKEN;
+  const token = process.env.MP_ACCESS_TOKEN?.trim();
   if (!token) return null;
   return new MercadoPagoConfig({ accessToken: token });
 }
 
 export function isMercadoPagoEnabled() {
-  return Boolean(process.env.MP_ACCESS_TOKEN);
+  return Boolean(process.env.MP_ACCESS_TOKEN?.trim());
 }
 
 export async function createCheckoutPreference(
@@ -34,13 +34,18 @@ export async function createCheckoutPreference(
         currency_id: "ARS",
       })),
       external_reference: options?.orderId || undefined,
-      statement_descriptor: options?.orderCode || "ETERNITY",
+      statement_descriptor: options?.orderCode?.slice(0, 22) || "ETERNITY",
       back_urls: {
         success: `${baseUrl}/checkout/exito`,
         failure: `${baseUrl}/checkout/error`,
         pending: `${baseUrl}/checkout/pendiente`,
       },
       auto_return: "approved",
+      notification_url: `${baseUrl}/api/webhooks/mercadopago`,
+      metadata: {
+        order_id: options?.orderId || "",
+        order_code: options?.orderCode || "",
+      },
     },
   });
 
@@ -49,4 +54,11 @@ export async function createCheckoutPreference(
     initPoint: result.init_point,
     sandboxInitPoint: result.sandbox_init_point,
   };
+}
+
+export async function getPaymentById(paymentId: string) {
+  const client = getClient();
+  if (!client) throw new Error("Mercado Pago no está configurado");
+  const payment = new Payment(client);
+  return payment.get({ id: paymentId });
 }

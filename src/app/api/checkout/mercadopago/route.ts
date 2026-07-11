@@ -15,39 +15,44 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const items = body.items as CartItem[];
   const note = body.note ? String(body.note) : "";
+  const email = body.email ? String(body.email).trim().toLowerCase() : "";
 
   if (!items?.length) {
     return NextResponse.json({ error: "El carrito está vacío" }, { status: 400 });
   }
 
+  if (!email || !email.includes("@")) {
+    return NextResponse.json(
+      { error: "Ingresá un correo válido para recibir el pedido" },
+      { status: 400 }
+    );
+  }
+
   try {
     const discountPercent = body.discountPercent != null ? Number(body.discountPercent) : 0;
-    const email = body.email ? String(body.email).trim().toLowerCase() : "";
     const order = await createOrder({
       channel: "mercadopago",
       items,
       customerNote: note,
-      customerEmail: email || undefined,
+      customerEmail: email,
       status: "pending",
       couponCode: body.couponCode ? String(body.couponCode) : null,
       discountPercent,
     });
 
-    if (email) {
-      try {
-        const { sendOrderReceivedEmail } = await import("@/lib/email");
-        await sendOrderReceivedEmail(email, {
-          code: order.code,
-          createdAt: order.createdAt,
-          total: order.total,
-          customerNote: order.customerNote,
-          couponCode: order.couponCode,
-          discountAmount: order.discountAmount,
-          items: order.items,
-        });
-      } catch (mailError) {
-        console.error("MP order email error:", mailError);
-      }
+    try {
+      const { sendOrderReceivedEmail } = await import("@/lib/email");
+      await sendOrderReceivedEmail(email, {
+        code: order.code,
+        createdAt: order.createdAt,
+        total: order.total,
+        customerNote: order.customerNote,
+        couponCode: order.couponCode,
+        discountAmount: order.discountAmount,
+        items: order.items,
+      });
+    } catch (mailError) {
+      console.error("MP order email error:", mailError);
     }
 
     const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
