@@ -51,6 +51,14 @@ const statusLabel: Record<string, string> = {
 export function AdminDashboard({ onGoOrders }: { onGoOrders: () => void }) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState("");
+  const [emailStatus, setEmailStatus] = useState<{
+    configured: boolean;
+    note?: string;
+    from?: string | null;
+  } | null>(null);
+  const [testTo, setTestTo] = useState("");
+  const [testMsg, setTestMsg] = useState("");
+  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/dashboard")
@@ -60,7 +68,34 @@ export function AdminDashboard({ onGoOrders }: { onGoOrders: () => void }) {
       })
       .then(setData)
       .catch((e) => setError(e.message));
+
+    fetch("/api/admin/email-status")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => json && setEmailStatus(json))
+      .catch(() => {});
   }, []);
+
+  async function sendTest() {
+    setTesting(true);
+    setTestMsg("");
+    try {
+      const res = await fetch("/api/admin/email-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: testTo }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setTestMsg(json.error || "Falló el envío de prueba");
+      } else {
+        setTestMsg(`Correo de prueba enviado a ${json.to}`);
+      }
+    } catch {
+      setTestMsg("No se pudo conectar");
+    } finally {
+      setTesting(false);
+    }
+  }
 
   if (error) {
     return <p className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p>;

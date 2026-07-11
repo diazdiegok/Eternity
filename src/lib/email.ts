@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { SITE, getBaseUrl } from "@/lib/config";
 import { formatPrice } from "@/lib/whatsapp";
 
@@ -17,6 +17,10 @@ type OrderMailBase = {
   discountAmount?: number | null;
   items: OrderMailItem[];
 };
+
+export type SendMailResult =
+  | { ok: true; skipped: false }
+  | { ok: false; skipped: boolean; error: string };
 
 function formatDate(value: Date | string) {
   return new Date(value).toLocaleString("es-AR", {
@@ -63,89 +67,58 @@ function wrapEmail(title: string, body: string) {
 </html>`;
 }
 
+/** Resend (HTTPS) funciona en Render Free. Gmail SMTP está bloqueado ahí. */
 export function isEmailConfigured() {
-  return Boolean(
-    process.env.SMTP_USER?.trim() && process.env.SMTP_PASS?.trim()
+  return Boolean(process.env.RESEND_API_KEY?.trim());
+}
+
+function getFromAddress() {
+  return (
+    process.env.EMAIL_FROM?.trim() ||
+    `${SITE.brandFull} <onboarding@resend.dev>`
   );
 }
 
-function smtpCredentials() {
-  const user = process.env.SMTP_USER?.trim() || "";
-  // Gmail muestra la app password con espacios; hay que quitarlos
-  const pass = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
-  return { user, pass };
-}
-
-function createTransport() {
-  const { user, pass } = smtpCredentials();
-  if (!user || !pass) {
-    throw new Error("SMTP no configurado");
-  }
-
-  const host = process.env.SMTP_HOST || "smtp.gmail.com";
-  const port = Number(process.env.SMTP_PORT || 587);
-
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure: process.env.SMTP_SECURE === "true" || port === 465,
-    requireTLS: port === 587,
-    connectionTimeout: 8_000,
-    greetingTimeout: 8_000,
-    socketTimeout: 12_000,
-    auth: { user, pass },
-  });
-}
-
-async function withTimeout<T>(promise: Promise<T>, ms: number, label: string) {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(
-          () => reject(new Error(`${label} agotó el tiempo (${ms}ms)`)),
-          ms
-        );
-      }),
-    ]);
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
-}
-
-async function sendMail(to: string, subject: string, html: string) {
-  if (!isEmailConfigured()) {
+async function sendMail(
+  to: string,
+  subject: string,
+  html: string
+): Promise<SendMailResult> {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  if (!apiKey) {
     console.warn(
-      "SMTP no configurado (faltan SMTP_USER / SMTP_PASS): se omite envío"
+      "RESEND_API_KEY no configurada: se omite envío (Render Free bloquea Gmail SMTP)"
     );
-    return { ok: false as const, skipped: true as const, error: "SMTP no configurado" };
+    return {
+      ok: false,
+      skipped: true,
+      error:
+        "Falta RESEND_API_KEY. Render Free no permite Gmail SMTP; usá Resend.",
+    };
   }
 
-  const { user } = smtpCredentials();
-  const from =
-    process.env.EMAIL_FROM?.trim() ||
-    `${SITE.brandFull} <${user}>`;
-
   try {
-    const transport = createTransport();
-    const info = await withTimeout(
-      transport.sendMail({ from, to, subject, html }),
-      12_000,
-      "Envío SMTP"
-    );
-    console.log(`Correo enviado a ${to}: ${info.messageId}`);
-    try {
-      transport.close();
-    } catch {
-      // ignore
+    const resend = new Resend(apiKey);
+    const { data, error } = await resend.emails.send({
+      from: getFromAddress(),
+      to: [to],
+      subject,
+      html,
+      replyTo: process.env.SMTP_USER?.trim() || undefined,
+    });
+
+    if (error) {
+      console.error("Error Resend:", error.message);
+      return { ok: false, skipped: false, error: error.message };
     }
-    return { ok: true as const, skipped: false as const };
+
+    console.log(`Correo enviado a ${to} via Resend: ${data?.id || "ok"}`);
+    return { ok: true, skipped: false };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Error al enviar correo";
-    console.error("Error SMTP:", message);
-    return { ok: false as const, skipped: false as const, error: message };
+    console.error("Error Resend:", message);
+    return { ok: false, skipped: false, error: message };
   }
 }
 
@@ -213,6 +186,19 @@ export async function sendOrderShippedEmail(
     to,
     `Tu pedido ${order.code} está en envío — ${SITE.brandFull}`,
     wrapEmail("Pedido en envío", body)
+  );
+}
+
+export async function sendTestEmail(to: string) {
+  return sendMail(
+    to,
+    `Prueba de correo — ${SITE.brandFull}`,
+    wrapEmail(
+      "Correo de prueba",
+      `<p style="margin:16px 0;line-height:1.5;color:#6d5c4d;">
+        Si estás leyendo esto, el envío de correos desde Eternity está funcionando.
+      </p>`
+    )
   );
 }
 

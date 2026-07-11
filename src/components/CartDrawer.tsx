@@ -160,8 +160,7 @@ export function CartDrawer() {
         return;
       }
       if (data.code) orderCode = String(data.code);
-      // El mail se envía en segundo plano; no bloquea el carrito
-      sent = data.emailSent === true ? true : data.emailQueued ? null : false;
+      sent = data.emailSent === true;
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
         setNotice(
@@ -260,11 +259,9 @@ export function CartDrawer() {
                   </p>
                 )}
                 <p className="mt-4 text-sm text-[#8a7b6e]">
-                  {emailSent === true
-                    ? "Te enviamos el detalle al correo. Ahora te llevamos a WhatsApp."
-                    : emailSent === false
-                      ? "Ahora te llevamos a WhatsApp. Si no llega el correo, revisá spam."
-                      : "En unos segundos te llevamos a WhatsApp. El detalle también llega por correo."}
+                  {emailSent
+                    ? "Te enviamos el detalle al correo. En unos segundos te llevamos a WhatsApp."
+                    : "Pedido guardado. En unos segundos te llevamos a WhatsApp. Si no llega el correo, avisanos."}
                 </p>
               </div>
               <div className="flex w-full flex-col gap-2">
