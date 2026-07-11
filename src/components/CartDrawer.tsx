@@ -326,7 +326,7 @@ export function CartDrawer() {
               />
               <p className="mt-1 text-xs text-[#9a8b7e]">
                 Te mandamos el N° de orden y el detalle. Después podés consultarlo
-                arriba a la derecha.
+                en Consultar mi pedido.
               </p>
             </div>
 
