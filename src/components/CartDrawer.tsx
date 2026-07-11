@@ -50,6 +50,14 @@ export function CartDrawer() {
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!whatsappUrl || !completedCode) return;
+    const t = window.setTimeout(() => {
+      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    }, 1800);
+    return () => window.clearTimeout(t);
+  }, [whatsappUrl, completedCode]);
+
   if (!isOpen) return null;
 
   function handleClose() {
@@ -191,14 +199,6 @@ export function CartDrawer() {
     setWhatsappUrl(url);
     setCompletedCode(orderCode || "registrado");
   }
-
-  useEffect(() => {
-    if (!whatsappUrl || !completedCode) return;
-    const t = window.setTimeout(() => {
-      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-    }, 1800);
-    return () => window.clearTimeout(t);
-  }, [whatsappUrl, completedCode]);
 
   const showSuccess = Boolean(completedCode) && items.length === 0;
 
