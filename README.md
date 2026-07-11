@@ -57,9 +57,9 @@ Si no configurás Mercado Pago, el carrito igual funciona y el cliente puede fin
 
 Todo eso requiere un **servidor backend**, no solo archivos estáticos.
 
-## Hosting gratuito recomendado: Render
+## Hosting recomendado: Render
 
-[Render](https://render.com) tiene plan gratuito para apps web con backend. Es la opción más simple para este proyecto.
+[Render](https://render.com) es la opción más simple. **Para no perder ventas ni fotos necesitás plan Starter** (el Free no soporta disco persistente).
 
 ### Pasos para publicar en Render
 
@@ -69,13 +69,14 @@ Todo eso requiere un **servidor backend**, no solo archivos estáticos.
 4. Configuración:
    - **Build Command:** `npm install && npm run build`
    - **Start Command:** `npm start`
-   - **Plan:** Free
-5. Agregá un **disco persistente** (importante para que no se borren la base de datos ni las imágenes):
+   - **Plan:** Starter
+5. Agregá un **disco persistente** (obligatorio):
    - Mount path: `/opt/render/project/src/data`
-   - Size: 1 GB (gratis)
+   - Size: 1 GB
 6. Variables de entorno en Render:
 
 ```
+DATA_DIR=/opt/render/project/src/data
 DATABASE_URL=file:/opt/render/project/src/data/dev.db
 ADMIN_PASSWORD=tu-contraseña-segura
 ADMIN_SECRET=clave-larga-aleatoria
@@ -85,13 +86,13 @@ MP_ACCESS_TOKEN=...   (opcional)
 
 7. Deploy
 
-> **Nota:** En el plan gratuito de Render la app se duerme tras inactividad (~50 s al despertar). Para un catálogo chico suele ser aceptable.
+> **Importante:** En plan Free cada deploy/sleep borra SQLite y uploads. Starter + Disk mantiene ventas e imágenes.
 
-### Alternativas gratuitas
+### Alternativas
 
 | Plataforma | ¿Funciona? | Notas |
 |------------|------------|-------|
-| **Render** | ✅ Recomendado | Backend + disco persistente |
+| **Render Starter + Disk** | ✅ Recomendado | Persistencia real de DB e imágenes |
 | **Railway** | ✅ | Créditos mensuales limitados |
 | **Vercel** | ⚠️ Parcial | SQLite no persiste bien; mejor Postgres (Neon gratis) |
 | **Fly.io** | ✅ | Requiere más configuración |

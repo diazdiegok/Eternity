@@ -1,8 +1,11 @@
 services:
+  # IMPORTANTE: el plan Free NO soporta disco persistente.
+  # Sin plan Starter (o superior) + Disk, cada deploy/sleep borra
+  # productos subidos, ventas e imágenes.
   - type: web
     name: eternity-recuerdos
     runtime: node
-    plan: free
+    plan: starter
     buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     envVars:

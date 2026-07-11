@@ -58,7 +58,7 @@ Entrá a [render.com](https://render.com) y registrate (podés usar tu cuenta de
 | **Runtime** | Node |
 | **Build Command** | `npm install && npm run build` |
 | **Start Command** | `npm start` |
-| **Plan** | Free |
+| **Plan** | Starter (Free no guarda datos) |
 
 ### 4. Disco persistente (obligatorio)
 
@@ -105,10 +105,29 @@ La primera vez carga automáticamente los **18 productos** con fotos si la base 
 
 ## Notas importantes
 
-### Plan gratuito
-- La app **se duerme** tras ~15 min sin visitas
-- La primera visita puede tardar **30–60 segundos** en despertar
-- Para un catálogo chico suele alcanzar
+### Persistencia de datos (obligatorio para no perder ventas)
+
+El plan **Free de Render no soporta disco persistente**. Sin disco, cada deploy o sleep **borra** la base (ventas, productos cargados e imágenes del admin).
+
+Para no perder info:
+
+1. Render → tu servicio → **Settings** → **Instance Type** → **Starter** (pago, ~USD 7/mes)
+2. **Disks** → **Add disk**
+   - Mount path: `/opt/render/project/src/data`
+   - Size: `1 GB`
+3. En **Environment** confirmá:
+   ```
+   DATA_DIR=/opt/render/project/src/data
+   DATABASE_URL=file:/opt/render/project/src/data/dev.db
+   ```
+4. Guardá y esperá el redeploy
+
+En los logs de arranque debería aparecer: `Disco persistente detectado en ...`
+
+### Plan Free (solo prueba)
+- Se duerme tras ~15 min sin visitas
+- **No guarda** SQLite ni uploads entre deploys
+- No lo uses si cargás ventas reales
 
 ### Imágenes
 - Las fotos del catálogo inicial van en el repo (`public/images/products/`)
@@ -125,7 +144,7 @@ En Render → **Settings** → **Custom Domain** podés conectar tu dominio.
 
 ## Alternativa: Blueprint automático
 
-Si el repo incluye `render.yaml`, podés usar **New → Blueprint** y Render crea el servicio con la config base. Igual tenés que setear manualmente:
+Si el repo incluye `render.yaml`, podés usar **New → Blueprint** y Render crea el servicio con la config base (plan Starter + disco). Igual tenés que setear manualmente:
 
 - `ADMIN_PASSWORD`
 - `NEXT_PUBLIC_BASE_URL`
