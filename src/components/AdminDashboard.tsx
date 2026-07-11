@@ -135,6 +135,42 @@ export function AdminDashboard({ onGoOrders }: { onGoOrders: () => void }) {
         ))}
       </div>
 
+      <section
+        className={`rounded-2xl border p-5 ${
+          emailStatus?.configured
+            ? "border-[#e4d5c5] bg-white"
+            : "border-amber-200 bg-amber-50"
+        }`}
+      >
+        <h3 className="font-serif text-xl text-[#4a3b30]">Correos</h3>
+        <p className="mt-1 text-sm text-[#6d5c4d]">
+          {emailStatus?.configured
+            ? emailStatus.note || "Resend configurado."
+            : "Render Free bloquea Gmail SMTP. Configurá RESEND_API_KEY para enviar mails."}
+        </p>
+        {emailStatus?.from && (
+          <p className="mt-1 text-xs text-[#8a7b6e]">From: {emailStatus.from}</p>
+        )}
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            type="email"
+            value={testTo}
+            onChange={(e) => setTestTo(e.target.value)}
+            placeholder="tu@email.com"
+            className="w-full rounded-xl border border-[#e8ddd3] bg-[#faf6f1] px-3 py-2.5 text-sm text-[#5c4a3d] outline-none sm:max-w-xs"
+          />
+          <button
+            type="button"
+            onClick={sendTest}
+            disabled={testing || !testTo.trim()}
+            className="rounded-full bg-[#4a3b30] px-4 py-2.5 text-sm text-white disabled:opacity-50"
+          >
+            {testing ? "Enviando..." : "Enviar prueba"}
+          </button>
+        </div>
+        {testMsg && <p className="mt-2 text-sm text-[#6d5c4d]">{testMsg}</p>}
+      </section>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-2xl border border-[#e4d5c5] bg-white p-5">
           <h3 className="font-serif text-xl text-[#4a3b30]">Ventas (7 días)</h3>
