@@ -13,9 +13,7 @@ const CONTENT_TYPES: Record<string, string> = {
 
 type RouteContext = { params: Promise<{ filename: string }> };
 
-/** Compat: productos ya guardados con /uploads/... */
-export async function GET(_request: NextRequest, context: RouteContext) {
-  const { filename } = await context.params;
+async function serveUpload(filename: string) {
   const decoded = decodeURIComponent(filename);
   const safeName = path.basename(decoded);
 
@@ -40,4 +38,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       "Cache-Control": "public, max-age=31536000, immutable",
     },
   });
+}
+
+export async function GET(_request: NextRequest, context: RouteContext) {
+  const { filename } = await context.params;
+  return serveUpload(filename);
 }

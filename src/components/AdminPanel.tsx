@@ -562,6 +562,7 @@ export function AdminPanel() {
                     alt={product.name}
                     fill
                     className="object-contain object-center p-0.5"
+                    unoptimized
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-xs text-stone-400">

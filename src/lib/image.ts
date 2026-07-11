@@ -12,7 +12,7 @@ function sanitizeBaseName(filename: string) {
     .replace(/[^\w.-]+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
+    .slice(0, 40);
   return cleaned || "product";
 }
 
@@ -33,5 +33,6 @@ export async function optimizeProductImage(buffer: Buffer, filename: string) {
     .webp({ quality: WEBP_QUALITY, effort: 6 })
     .toFile(outPath);
 
-  return `/uploads/${outName}`;
+  // /api/media evita el conflicto con public/uploads en Next.js
+  return `/api/media/${outName}`;
 }

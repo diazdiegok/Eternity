@@ -22,18 +22,11 @@ export function linkPublicUploads() {
   ensureStorageDirs();
 
   const publicUploads = path.join(process.cwd(), "public", "uploads");
-  const uploadsDir = getUploadsDir();
 
+  // En producción con disco persistente, NO usamos public/uploads:
+  // Next sirve esa carpeta primero y deja 404 sin llegar a la route.
+  // Las imágenes se sirven desde /uploads y /api/media (route handlers).
   if (fs.existsSync(publicUploads)) {
-    const stat = fs.lstatSync(publicUploads);
-    if (stat.isSymbolicLink()) {
-      fs.unlinkSync(publicUploads);
-    } else {
-      // Carpeta real (p. ej. con .gitkeep): bloquea el symlink y las
-      // imágenes quedan en DATA_DIR pero no se sirven desde /uploads.
-      fs.rmSync(publicUploads, { recursive: true, force: true });
-    }
+    fs.rmSync(publicUploads, { recursive: true, force: true });
   }
-
-  fs.symlinkSync(uploadsDir, publicUploads, "dir");
 }
