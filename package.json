@@ -18,19 +18,19 @@
     "seed": "npx tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@prisma/adapter-better-sqlite3": "^7.8.0",
+    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^12.11.1",
     "dotenv": "^17.4.2",
     "jose": "^6.2.3",
     "mercadopago": "^3.2.0",
     "next": "16.2.10",
     "otplib": "^13.4.1",
+    "pg": "^8.22.0",
     "prisma": "^7.8.0",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
-    "@types/better-sqlite3": "^7.6.13",
+    "@types/pg": "^8.20.0",
     "@types/qrcode": "^1.5.6",
     "eslint": "^9",
     "eslint-config-next": "16.2.10"

@@ -15,7 +15,7 @@ type Product = {
   featured: boolean;
 };
 
-const CATEGORY_ORDER = ["Sin Bordes", "Bordes de Acero", "Plata 925"];
+const CATEGORY_ORDER = ["Sin Bordes", "Bordes de Acero", "Plata 925", "Mascotas"];
 
 export function CatalogPage() {
   const [products, setProducts] = useState<Product[]>([]);

@@ -30,7 +30,7 @@ Abrí [http://localhost:3000](http://localhost:3000)
 
 | Variable | Descripción |
 |----------|-------------|
-| `DATABASE_URL` | SQLite, ej: `file:./dev.db` |
+| `DATABASE_URL` | Postgres, ej. Internal URL de Render Postgres Free |
 | `ADMIN_PASSWORD` | Contraseña del panel admin |
 | `ADMIN_SECRET` | Clave para firmar la sesión admin |
 | `NEXT_PUBLIC_BASE_URL` | URL pública del sitio (obligatoria en producción) |
@@ -57,46 +57,35 @@ Si no configurás Mercado Pago, el carrito igual funciona y el cliente puede fin
 
 Todo eso requiere un **servidor backend**, no solo archivos estáticos.
 
-## Hosting recomendado: Render
+## Hosting recomendado: Render (Free)
 
-[Render](https://render.com) es la opción más simple. **Para no perder ventas ni fotos necesitás plan Starter** (el Free no soporta disco persistente).
+Web Service Free + **Postgres Free** (mismo Render). Las ventas y fotos del admin viven en Postgres, no en disco.
 
-### Pasos para publicar en Render
+### Pasos
 
-1. Subí el proyecto a un repositorio en GitHub (solo la carpeta `eternity-catalog`)
-2. En Render → **New → Web Service**
-3. Conectá el repo
-4. Configuración:
-   - **Build Command:** `npm install && npm run build`
-   - **Start Command:** `npm start`
-   - **Plan:** Starter
-5. Agregá un **disco persistente** (obligatorio):
-   - Mount path: `/opt/render/project/src/data`
-   - Size: 1 GB
-6. Variables de entorno en Render:
+1. Subí el proyecto a GitHub
+2. Render → **New → PostgreSQL** → plan Free
+3. Render → **New → Web Service** (o el existente)
+   - **Build:** `npm install && npm run build`
+   - **Start:** `npm start`
+   - **Plan:** Free
+4. Environment:
+   - `DATABASE_URL` = Internal Database URL del Postgres
+   - `ADMIN_PASSWORD`, `ADMIN_SECRET`, `NEXT_PUBLIC_BASE_URL`
+5. Deploy
 
-```
-DATA_DIR=/opt/render/project/src/data
-DATABASE_URL=file:/opt/render/project/src/data/dev.db
-ADMIN_PASSWORD=tu-contraseña-segura
-ADMIN_SECRET=clave-larga-aleatoria
-NEXT_PUBLIC_BASE_URL=https://tu-app.onrender.com
-MP_ACCESS_TOKEN=...   (opcional)
-```
+Detalle completo en [`DEPLOY.md`](DEPLOY.md).
 
-7. Deploy
-
-> **Importante:** En plan Free cada deploy/sleep borra SQLite y uploads. Starter + Disk mantiene ventas e imágenes.
+> El Postgres Free de Render vence a ~30 días. El Web Free se duerme sin visitas, pero ya no borra la DB.
 
 ### Alternativas
 
 | Plataforma | ¿Funciona? | Notas |
 |------------|------------|-------|
-| **Render Starter + Disk** | ✅ Recomendado | Persistencia real de DB e imágenes |
+| **Render Free + Postgres Free** | ✅ Recomendado | Sin pagar; DB vence ~30 días |
 | **Railway** | ✅ | Créditos mensuales limitados |
-| **Vercel** | ⚠️ Parcial | SQLite no persiste bien; mejor Postgres (Neon gratis) |
-| **Fly.io** | ✅ | Requiere más configuración |
-| **GitHub Pages** | ❌ | Solo estático, sin admin ni DB |
+| **Vercel + Neon** | ✅ | Postgres externo |
+| **GitHub Pages** | ❌ | Solo estático |
 
 ## Contacto del negocio (configurado)
 

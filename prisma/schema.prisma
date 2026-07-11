@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 model Product {
@@ -25,6 +25,13 @@ model Category {
   name  String @unique
   slug  String @unique
   order Int    @default(0)
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  mimeType  String   @default("image/webp")
+  data      Bytes
+  createdAt DateTime @default(now())
 }
 
 model Order {

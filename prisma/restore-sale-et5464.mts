@@ -1,14 +1,11 @@
 import "dotenv/config";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "../src/generated/prisma/client";
+import { createDb } from "./create-db";
 
 const CODE = "ET-5464";
 const PRODUCT_NAME = "Dije con Tela, Inicial y Pelito";
 const TOTAL = 65000;
 
-const url = process.env.DATABASE_URL || "file:./dev.db";
-const adapter = new PrismaBetterSqlite3({ url });
-const db = new PrismaClient({ adapter });
+const { db, pool } = createDb();
 
 async function main() {
   const existing = await db.order.findUnique({ where: { code: CODE } });
@@ -60,4 +57,7 @@ main()
     console.error("Error restaurando venta:", err);
     process.exitCode = 1;
   })
-  .finally(() => db.$disconnect());
+  .finally(async () => {
+    await db.$disconnect();
+    await pool.end();
+  });

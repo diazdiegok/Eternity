@@ -26,62 +26,53 @@ Escaneá el QR (`totp-qr.png`) con Microsoft Authenticator. Copiá el valor de `
 
 ---
 
-## Pasos para publicar en Render
+## Persistencia gratis (sin pagar Starter)
+
+El Web Service Free **no guarda archivos en disco**. Ventas y fotos viven en **Postgres Free** del mismo Render.
 
 ### 1. Subir el proyecto a GitHub
-
-Creá un repo nuevo (solo la carpeta `eternity-catalog`) y subilo:
 
 ```bash
 cd eternity-catalog
 git add .
-git commit -m "Catálogo Eternity Recuerdos listo para deploy"
-git remote add origin https://github.com/TU-USUARIO/eternity-recuerdos.git
-git push -u origin main
+git commit -m "Catálogo Eternity Recuerdos"
+git push
 ```
 
-### 2. Crear cuenta en Render
+### 2. Crear Postgres Free en Render
 
-Entrá a [render.com](https://render.com) y registrate (podés usar tu cuenta de GitHub).
+1. **New +** → **PostgreSQL**
+2. Name: `eternity-db`
+3. Plan: **Free**
+4. Create
 
-### 3. Crear Web Service
+> El Postgres Free **vence a los 30 días**. Antes de eso exportá o creá otra DB.
 
-1. **New +** → **Web Service**
-2. Conectá el repositorio de GitHub
+### 3. Crear / configurar Web Service
+
+1. **New +** → **Web Service** (o usá el existente)
+2. Conectá el repo
 3. Configuración:
 
 | Campo | Valor |
 |-------|--------|
 | **Name** | `eternity-recuerdos` |
-| **Region** | La más cercana (ej. Oregon) |
-| **Branch** | `main` |
 | **Runtime** | Node |
 | **Build Command** | `npm install && npm run build` |
 | **Start Command** | `npm start` |
-| **Plan** | Starter (Free no guarda datos) |
+| **Plan** | Free |
 
-### 4. Disco persistente (obligatorio)
-
-Sin esto se borran productos e imágenes subidas en cada deploy.
-
-1. En el servicio → **Disks** → **Add disk**
-2. **Mount path:** `/opt/render/project/src/data`
-3. **Size:** 1 GB
-
-### 5. Variables de entorno
-
-En **Environment** agregá:
+### 4. Variables de entorno
 
 ```
-DATA_DIR=/opt/render/project/src/data
-DATABASE_URL=file:/opt/render/project/src/data/dev.db
+DATABASE_URL=<Internal Database URL del Postgres>
 ADMIN_PASSWORD=TuContraseñaSegura123!
 ADMIN_SECRET=una-clave-larga-aleatoria-minimo-32-caracteres
 ADMIN_TOTP_SECRET=el-mismo-secreto-que-en-tu-env-local
-NEXT_PUBLIC_BASE_URL=https://eternity-recuerdos.onrender.com
+NEXT_PUBLIC_BASE_URL=https://tu-app.onrender.com
 ```
 
-Reemplazá la URL por la que te asigne Render (aparece arriba cuando creás el servicio).
+Cómo obtener `DATABASE_URL`: Postgres → **Info** → **Internal Database URL** → copiar → pegar en el Web Service → Environment.
 
 Opcional (Mercado Pago):
 
@@ -90,61 +81,40 @@ MP_ACCESS_TOKEN=APP_USR-tu-token
 MP_SANDBOX=false
 ```
 
-### 6. Deploy
+**No hace falta** `DATA_DIR` ni disco persistente.
 
-Clic en **Create Web Service**. El primer deploy tarda unos minutos.
+### 5. Deploy
 
-La primera vez carga automáticamente los **18 productos** con fotos si la base está vacía.
+Clic en **Deploy**. Al arrancar:
 
-### 7. Probar
+- Corre migraciones
+- Si la base está vacía, carga los productos iniciales
+- Restaura la venta manual `ET-5464` si no existe
+
+### 6. Probar
 
 - Catálogo: `https://tu-app.onrender.com`
-- Admin: `https://tu-app.onrender.com/admin` → tu `ADMIN_PASSWORD`
+- Admin: `https://tu-app.onrender.com/admin`
 
 ---
 
 ## Notas importantes
 
-### Persistencia de datos (obligatorio para no perder ventas)
-
-El plan **Free de Render no soporta disco persistente**. Sin disco, cada deploy o sleep **borra** la base (ventas, productos cargados e imágenes del admin).
-
-Para no perder info:
-
-1. Render → tu servicio → **Settings** → **Instance Type** → **Starter** (pago, ~USD 7/mes)
-2. **Disks** → **Add disk**
-   - Mount path: `/opt/render/project/src/data`
-   - Size: `1 GB`
-3. En **Environment** confirmá:
-   ```
-   DATA_DIR=/opt/render/project/src/data
-   DATABASE_URL=file:/opt/render/project/src/data/dev.db
-   ```
-4. Guardá y esperá el redeploy
-
-En los logs de arranque debería aparecer: `Disco persistente detectado en ...`
-
-### Plan Free (solo prueba)
-- Se duerme tras ~15 min sin visitas
-- **No guarda** SQLite ni uploads entre deploys
-- No lo uses si cargás ventas reales
+### Plan Free
+- La app se duerme tras ~15 min sin visitas
+- La DB Postgres Free **sí** sobrevive deploy/sleep
+- Postgres Free expira a ~30 días (renová o migrá)
 
 ### Imágenes
-- Las fotos del catálogo inicial van en el repo (`public/images/products/`)
-- Las que subís desde el admin se guardan en el **disco persistente**
+- Fotos del catálogo seed: en el repo (`public/images/products/`)
+- Fotos subidas desde el admin: en Postgres (tabla `Media`)
+
+### Categorías
+- En admin → Productos → **Editar categoría** renombrás y se actualiza en todos los productos
 
 ### Cambiar contraseña admin
 1. Render → Environment → editá `ADMIN_PASSWORD`
-2. Save → redeploy automático
+2. Save → redeploy
 
 ### Dominio propio (opcional)
-En Render → **Settings** → **Custom Domain** podés conectar tu dominio.
-
----
-
-## Alternativa: Blueprint automático
-
-Si el repo incluye `render.yaml`, podés usar **New → Blueprint** y Render crea el servicio con la config base (plan Starter + disco). Igual tenés que setear manualmente:
-
-- `ADMIN_PASSWORD`
-- `NEXT_PUBLIC_BASE_URL`
+En Render → **Settings** → **Custom Domain**.

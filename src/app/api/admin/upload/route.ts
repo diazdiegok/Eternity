@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mkdir } from "fs/promises";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { optimizeProductImage } from "@/lib/image";
-import { ensureStorageDirs, getUploadsDir, linkPublicUploads } from "@/lib/storage";
 
 export async function POST(request: NextRequest) {
   if (!(await isAdminAuthenticated())) {
@@ -24,12 +22,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Máximo 15 MB" }, { status: 400 });
   }
 
-  ensureStorageDirs();
-  linkPublicUploads();
-  await mkdir(getUploadsDir(), { recursive: true });
-
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const url = await optimizeProductImage(buffer, file.name);
-
-  return NextResponse.json({ url });
+  try {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const url = await optimizeProductImage(buffer);
+    return NextResponse.json({ url });
+  } catch (error) {
+    console.error("Upload error:", error);
+    return NextResponse.json({ error: "No se pudo procesar la imagen" }, { status: 500 });
+  }
 }

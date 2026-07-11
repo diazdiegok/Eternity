@@ -1,10 +1,7 @@
 import "dotenv/config";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "../src/generated/prisma/client";
+import { createDb } from "./create-db";
 
-const url = process.env.DATABASE_URL || "file:./dev.db";
-const adapter = new PrismaBetterSqlite3({ url });
-const db = new PrismaClient({ adapter });
+const { db, pool } = createDb();
 
 const IMG = (name: string) => `/images/products/${name}`;
 
@@ -166,4 +163,7 @@ async function main() {
 
 main()
   .catch(console.error)
-  .finally(() => db.$disconnect());
+  .finally(async () => {
+    await db.$disconnect();
+    await pool.end();
+  });

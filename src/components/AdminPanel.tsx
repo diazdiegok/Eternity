@@ -51,6 +51,9 @@ export function AdminPanel() {
   const [categoryMode, setCategoryMode] = useState<"preset" | "custom">("preset");
   const [customCategory, setCustomCategory] = useState("");
   const [tab, setTab] = useState<"dashboard" | "orders" | "products">("dashboard");
+  const [renameFrom, setRenameFrom] = useState("");
+  const [renameTo, setRenameTo] = useState("");
+  const [renaming, setRenaming] = useState(false);
 
   const categoryOptions = useMemo(() => {
     const fromProducts = products.map((p) => p.category);
@@ -219,6 +222,47 @@ export function AdminPanel() {
     await loadProducts();
   }
 
+  async function handleRenameCategory(e: FormEvent) {
+    e.preventDefault();
+    const from = renameFrom.trim();
+    const to = renameTo.trim();
+    if (!from || !to) {
+      setMessage("Elegí la categoría y el nombre nuevo");
+      return;
+    }
+    if (from === to) {
+      setMessage("El nombre nuevo debe ser distinto");
+      return;
+    }
+
+    setRenaming(true);
+    setMessage("");
+    const res = await fetch("/api/admin/categories", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ from, to }),
+    });
+    const json = await res.json().catch(() => ({}));
+    setRenaming(false);
+
+    if (!res.ok) {
+      setMessage(json.error || "No se pudo renombrar");
+      return;
+    }
+
+    setMessage(
+      json.updated
+        ? `Categoría renombrada: "${from}" → "${to}" (${json.updated} productos)`
+        : `No había productos en "${from}"`
+    );
+    setRenameFrom("");
+    setRenameTo("");
+    if (form.category === from) {
+      setForm((f) => ({ ...f, category: to }));
+    }
+    await loadProducts();
+  }
+
   if (authenticated === null) {
     return <p className="p-8 text-center text-stone-500">Cargando...</p>;
   }
@@ -365,6 +409,52 @@ export function AdminPanel() {
 
       {tab === "products" && (
         <>
+      <form
+        onSubmit={handleRenameCategory}
+        className="mb-6 rounded-2xl border border-[#e8ddd3] bg-white p-6 shadow-sm"
+      >
+        <h2 className="font-serif text-xl text-stone-800">Editar categoría</h2>
+        <p className="mt-1 text-sm text-[#9a8b7e]">
+          Renombra una categoría y se actualiza en todos los productos.
+        </p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <label className="block text-sm font-medium text-[#5c4a3d]">
+            Categoría actual
+            <select
+              value={renameFrom}
+              onChange={(e) => {
+                setRenameFrom(e.target.value);
+                if (!renameTo) setRenameTo(e.target.value);
+              }}
+              className={`${inputClass} cursor-pointer`}
+            >
+              <option value="">Elegí una...</option>
+              {categoryOptions.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-sm font-medium text-[#5c4a3d]">
+            Nombre nuevo
+            <input
+              value={renameTo}
+              onChange={(e) => setRenameTo(e.target.value)}
+              placeholder="Nuevo nombre"
+              className={inputClass}
+            />
+          </label>
+        </div>
+        <button
+          type="submit"
+          disabled={renaming || !renameFrom || !renameTo.trim()}
+          className="mt-4 rounded-full bg-[#5c4a3d] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#4a3b30] disabled:opacity-50"
+        >
+          {renaming ? "Renombrando..." : "Renombrar categoría"}
+        </button>
+      </form>
+
       <form
         onSubmit={handleSave}
         className="mb-10 rounded-2xl border border-[#e8ddd3] bg-white p-6 shadow-sm"

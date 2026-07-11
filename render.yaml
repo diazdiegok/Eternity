@@ -1,27 +1,26 @@
+databases:
+  - name: eternity-db
+    plan: free
+    databaseName: eternity
+    user: eternity
+
 services:
-  # IMPORTANTE: el plan Free NO soporta disco persistente.
-  # Sin plan Starter (o superior) + Disk, cada deploy/sleep borra
-  # productos subidos, ventas e imágenes.
   - type: web
     name: eternity-recuerdos
     runtime: node
-    plan: starter
+    plan: free
     buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DATA_DIR
-        value: /opt/render/project/src/data
       - key: DATABASE_URL
-        value: file:/opt/render/project/src/data/dev.db
+        fromDatabase:
+          name: eternity-db
+          property: connectionString
       - key: ADMIN_PASSWORD
         sync: false
       - key: ADMIN_SECRET
         generateValue: true
       - key: NEXT_PUBLIC_BASE_URL
         sync: false
-    disk:
-      name: eternity-data
-      mountPath: /opt/render/project/src/data
-      sizeGB: 1
