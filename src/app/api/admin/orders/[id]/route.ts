@@ -151,22 +151,18 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     order.shippingCarrier &&
     order.trackingCode
   ) {
-    try {
-      await sendOrderShippedEmail(order.customerEmail, {
-        code: order.code,
-        createdAt: order.createdAt,
-        total: order.total,
-        customerNote: order.customerNote,
-        couponCode: order.couponCode,
-        discountAmount: order.discountAmount,
-        items: order.items,
-        shippingCarrier: order.shippingCarrier,
-        trackingCode: order.trackingCode,
-      });
-      emailSent = true;
-    } catch (mailError) {
-      console.error("Shipping email error:", mailError);
-    }
+    const mail = await sendOrderShippedEmail(order.customerEmail, {
+      code: order.code,
+      createdAt: order.createdAt,
+      total: order.total,
+      customerNote: order.customerNote,
+      couponCode: order.couponCode,
+      discountAmount: order.discountAmount,
+      items: order.items,
+      shippingCarrier: order.shippingCarrier,
+      trackingCode: order.trackingCode,
+    });
+    emailSent = mail.ok;
   }
 
   return NextResponse.json({ ...order, emailSent });

@@ -29,6 +29,7 @@ export function CartDrawer() {
   const [loadingMp, setLoadingMp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [completedCode, setCompletedCode] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState<boolean | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [email, setEmail] = useState("");
 
@@ -52,6 +53,7 @@ export function CartDrawer() {
 
   function handleClose() {
     setCompletedCode(null);
+    setEmailSent(null);
     closeCart();
   }
 
@@ -136,6 +138,7 @@ export function CartDrawer() {
       : null;
 
     let orderCode: string | null = null;
+    let sent: boolean | null = null;
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -149,6 +152,7 @@ export function CartDrawer() {
         return;
       }
       if (data.code) orderCode = String(data.code);
+      sent = Boolean(data.emailSent);
     } catch {
       // Si falla el registro, igual abrimos WhatsApp
     }
@@ -165,6 +169,7 @@ export function CartDrawer() {
     setEmail("");
     setCouponInput("");
     setCouponMsg("");
+    setEmailSent(sent);
     setCompletedCode(orderCode || "registrado");
     setSubmitting(false);
   }
@@ -228,8 +233,11 @@ export function CartDrawer() {
                   </p>
                 )}
                 <p className="mt-4 text-sm text-[#8a7b6e]">
-                  Te enviamos el detalle al correo y abrimos WhatsApp para
-                  confirmarlo.
+                  {emailSent === true
+                    ? "Te enviamos el detalle al correo y abrimos WhatsApp para confirmarlo."
+                    : emailSent === false
+                      ? "Abrimos WhatsApp para confirmarlo. El correo no se pudo enviar todavía (revisá la config SMTP en Render)."
+                      : "Abrimos WhatsApp para confirmarlo."}
                 </p>
               </div>
               <button

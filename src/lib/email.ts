@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { SITE } from "@/lib/config";
+import { SITE, getBaseUrl } from "@/lib/config";
 import { formatPrice } from "@/lib/whatsapp";
 
 type OrderMailItem = {
@@ -64,37 +64,60 @@ function wrapEmail(title: string, body: string) {
 }
 
 export function isEmailConfigured() {
-  return Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
+  return Boolean(
+    process.env.SMTP_USER?.trim() && process.env.SMTP_PASS?.trim()
+  );
+}
+
+function smtpCredentials() {
+  const user = process.env.SMTP_USER?.trim() || "";
+  // Gmail muestra la app password con espacios; hay que quitarlos
+  const pass = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
+  return { user, pass };
 }
 
 function createTransport() {
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+  const { user, pass } = smtpCredentials();
   if (!user || !pass) {
     throw new Error("SMTP no configurado");
   }
 
+  const host = process.env.SMTP_HOST || "smtp.gmail.com";
+  const port = Number(process.env.SMTP_PORT || 587);
+
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: process.env.SMTP_SECURE === "true",
+    host,
+    port,
+    secure: process.env.SMTP_SECURE === "true" || port === 465,
+    requireTLS: port === 587,
     auth: { user, pass },
   });
 }
 
 async function sendMail(to: string, subject: string, html: string) {
   if (!isEmailConfigured()) {
-    console.warn("SMTP no configurado: se omite envío de correo");
-    return { skipped: true as const };
+    console.warn(
+      "SMTP no configurado (faltan SMTP_USER / SMTP_PASS): se omite envío"
+    );
+    return { ok: false as const, skipped: true as const, error: "SMTP no configurado" };
   }
 
+  const { user } = smtpCredentials();
   const from =
-    process.env.EMAIL_FROM ||
-    `${SITE.brandFull} <${process.env.SMTP_USER}>`;
+    process.env.EMAIL_FROM?.trim() ||
+    `${SITE.brandFull} <${user}>`;
 
-  const transport = createTransport();
-  await transport.sendMail({ from, to, subject, html });
-  return { skipped: false as const };
+  try {
+    const transport = createTransport();
+    const info = await transport.sendMail({ from, to, subject, html });
+    console.log(`Correo enviado a ${to}: ${info.messageId}`);
+    return { ok: true as const, skipped: false as const };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Error al enviar correo";
+    console.error("Error SMTP:", message);
+    return { ok: false as const, skipped: false as const, error: message };
+  }
 }
 
 export async function sendOrderReceivedEmail(
@@ -123,7 +146,7 @@ export async function sendOrderReceivedEmail(
         : ""
     }
     <p style="margin:20px 0 0;font-size:14px;color:#6d5c4d;">
-      Podés consultar el estado de tu pedido en el sitio con el N° de orden y este correo.
+      Podés consultar el estado en ${escapeHtml(getBaseUrl())}/mi-pedido con el N° de orden y este correo.
     </p>
   `;
 

@@ -36,25 +36,24 @@ export async function POST(request: NextRequest) {
         body.discountPercent != null ? Number(body.discountPercent) : 0,
     });
 
-    try {
-      await sendOrderReceivedEmail(email, {
-        code: order.code,
-        createdAt: order.createdAt,
-        total: order.total,
-        customerNote: order.customerNote,
-        couponCode: order.couponCode,
-        discountAmount: order.discountAmount,
-        items: order.items,
-      });
-    } catch (mailError) {
-      console.error("Order confirmation email error:", mailError);
-    }
+    const mail = await sendOrderReceivedEmail(email, {
+      code: order.code,
+      createdAt: order.createdAt,
+      total: order.total,
+      customerNote: order.customerNote,
+      couponCode: order.couponCode,
+      discountAmount: order.discountAmount,
+      items: order.items,
+    });
 
     return NextResponse.json({
       id: order.id,
       code: order.code,
       total: order.total,
       email,
+      emailSent: mail.ok,
+      emailSkipped: mail.skipped,
+      emailError: mail.ok ? null : mail.error || "No se pudo enviar el correo",
     });
   } catch (error) {
     console.error("Create order error:", error);
