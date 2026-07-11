@@ -5,10 +5,20 @@ import { ensureStorageDirs, getUploadsDir } from "./storage";
 const OUTPUT = 1440;
 const WEBP_QUALITY = 96;
 
+function sanitizeBaseName(filename: string) {
+  const base = path.basename(filename, path.extname(filename));
+  const cleaned = base
+    .normalize("NFKD")
+    .replace(/[^\w.-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+  return cleaned || "product";
+}
+
 export async function optimizeProductImage(buffer: Buffer, filename: string) {
   ensureStorageDirs();
-  const base = path.basename(filename, path.extname(filename));
-  const outName = `${base}-${Date.now()}.webp`;
+  const outName = `${sanitizeBaseName(filename)}-${Date.now()}.webp`;
   const outPath = path.join(getUploadsDir(), outName);
 
   await sharp(buffer)

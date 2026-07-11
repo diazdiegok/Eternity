@@ -22,12 +22,15 @@ function linkPublicUploads(dataDir) {
 
   if (fs.existsSync(publicUploads)) {
     const stat = fs.lstatSync(publicUploads);
-    if (stat.isSymbolicLink()) fs.unlinkSync(publicUploads);
+    if (stat.isSymbolicLink()) {
+      fs.unlinkSync(publicUploads);
+    } else {
+      // Real dir (e.g. .gitkeep) blocks the symlink → uploads 404 on Render.
+      fs.rmSync(publicUploads, { recursive: true, force: true });
+    }
   }
 
-  if (!fs.existsSync(publicUploads)) {
-    fs.symlinkSync(uploadsDir, publicUploads, "dir");
-  }
+  fs.symlinkSync(uploadsDir, publicUploads, "dir");
 }
 
 console.log("Preparando almacenamiento...");

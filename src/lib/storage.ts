@@ -28,10 +28,12 @@ export function linkPublicUploads() {
     const stat = fs.lstatSync(publicUploads);
     if (stat.isSymbolicLink()) {
       fs.unlinkSync(publicUploads);
+    } else {
+      // Carpeta real (p. ej. con .gitkeep): bloquea el symlink y las
+      // imágenes quedan en DATA_DIR pero no se sirven desde /uploads.
+      fs.rmSync(publicUploads, { recursive: true, force: true });
     }
   }
 
-  if (!fs.existsSync(publicUploads)) {
-    fs.symlinkSync(uploadsDir, publicUploads, "dir");
-  }
+  fs.symlinkSync(uploadsDir, publicUploads, "dir");
 }

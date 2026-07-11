@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { mkdir } from "fs/promises";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { optimizeProductImage } from "@/lib/image";
-import { ensureStorageDirs, getUploadsDir } from "@/lib/storage";
+import { ensureStorageDirs, getUploadsDir, linkPublicUploads } from "@/lib/storage";
 
 export async function POST(request: NextRequest) {
   if (!(await isAdminAuthenticated())) {
@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
   }
 
   ensureStorageDirs();
+  linkPublicUploads();
   await mkdir(getUploadsDir(), { recursive: true });
 
   const buffer = Buffer.from(await file.arrayBuffer());
