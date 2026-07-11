@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { formatPrice } from "@/lib/whatsapp";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 type Product = {
   id: string;
@@ -86,6 +87,8 @@ export function AdminOrders({ products }: { products: Product[] }) {
   });
   const [editItems, setEditItems] = useState<EditItem[]>([]);
   const [editSaving, setEditSaving] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const activeProducts = useMemo(
     () => products.filter((p) => p.active),
@@ -220,11 +223,15 @@ export function AdminOrders({ products }: { products: Product[] }) {
     cancelEdit();
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar este pedido?")) return;
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    const id = pendingDeleteId;
+    setDeleting(true);
     await fetch(`/api/admin/orders/${id}`, { method: "DELETE" });
     setOrders((prev) => prev.filter((o) => o.id !== id));
     if (editingId === id) cancelEdit();
+    setPendingDeleteId(null);
+    setDeleting(false);
   }
 
   async function handleManualSale(e: FormEvent) {
@@ -649,7 +656,7 @@ export function AdminOrders({ products }: { products: Product[] }) {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDelete(order.id)}
+                        onClick={() => setPendingDeleteId(order.id)}
                         className="rounded-full border border-red-200 px-3 py-1.5 text-sm text-red-600"
                       >
                         Eliminar
@@ -662,6 +669,16 @@ export function AdminOrders({ products }: { products: Product[] }) {
           </div>
         )}
       </section>
+
+      <ConfirmDialog
+        open={Boolean(pendingDeleteId)}
+        title="Eliminar pedido"
+        message="¿Eliminar este pedido? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </div>
   );
 }

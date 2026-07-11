@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 type Coupon = {
   id: string;
@@ -20,6 +21,8 @@ export function AdminCoupons() {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -65,9 +68,12 @@ export function AdminCoupons() {
     await load();
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar este cupón?")) return;
-    await fetch(`/api/admin/coupons/${id}`, { method: "DELETE" });
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    setDeleting(true);
+    await fetch(`/api/admin/coupons/${pendingDeleteId}`, { method: "DELETE" });
+    setPendingDeleteId(null);
+    setDeleting(false);
     await load();
   }
 
@@ -149,7 +155,7 @@ export function AdminCoupons() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDelete(coupon.id)}
+                    onClick={() => setPendingDeleteId(coupon.id)}
                     className="rounded-full border border-red-200 px-3 py-1.5 text-sm text-red-600"
                   >
                     Eliminar
@@ -160,6 +166,16 @@ export function AdminCoupons() {
           </div>
         )}
       </section>
+
+      <ConfirmDialog
+        open={Boolean(pendingDeleteId)}
+        title="Eliminar cupón"
+        message="¿Eliminar este cupón? Los clientes ya no podrán usarlo."
+        confirmLabel="Eliminar"
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </div>
   );
 }

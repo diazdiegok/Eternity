@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 type Promotion = {
   id: string;
@@ -25,6 +26,8 @@ export function AdminPromotions({ categories }: { categories: string[] }) {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const categoryList = useMemo(
     () => [...new Set(categories.filter(Boolean))].sort(),
@@ -87,9 +90,12 @@ export function AdminPromotions({ categories }: { categories: string[] }) {
     await load();
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar esta promoción?")) return;
-    await fetch(`/api/admin/promotions/${id}`, { method: "DELETE" });
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    setDeleting(true);
+    await fetch(`/api/admin/promotions/${pendingDeleteId}`, { method: "DELETE" });
+    setPendingDeleteId(null);
+    setDeleting(false);
     await load();
   }
 
@@ -230,7 +236,7 @@ export function AdminPromotions({ categories }: { categories: string[] }) {
                       )}
                       <button
                         type="button"
-                        onClick={() => handleDelete(promo.id)}
+                        onClick={() => setPendingDeleteId(promo.id)}
                         className="rounded-full border border-red-200 px-3 py-1.5 text-sm text-red-600"
                       >
                         Eliminar
@@ -243,6 +249,16 @@ export function AdminPromotions({ categories }: { categories: string[] }) {
           </div>
         )}
       </section>
+
+      <ConfirmDialog
+        open={Boolean(pendingDeleteId)}
+        title="Eliminar promoción"
+        message="¿Eliminar esta promoción? Dejará de aplicar en el catálogo."
+        confirmLabel="Eliminar"
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </div>
   );
 }

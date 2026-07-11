@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { buildWhatsAppUrl, formatPrice } from "@/lib/whatsapp";
 import { useCart } from "@/context/CartContext";
 import { WhatsAppIcon } from "@/components/Icons";
+import { NoticeDialog } from "@/components/ConfirmDialog";
 
 export function CartDrawer() {
   const {
@@ -28,6 +29,7 @@ export function CartDrawer() {
   const [loadingMp, setLoadingMp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [completedCode, setCompletedCode] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/checkout/mercadopago")
@@ -97,9 +99,9 @@ export function CartDrawer() {
         window.location.href = data.checkoutUrl;
         return;
       }
-      alert(data.error || "Error al iniciar el pago");
+      setNotice(data.error || "Error al iniciar el pago");
     } catch {
-      alert("Error al conectar con Mercado Pago");
+      setNotice("Error al conectar con Mercado Pago");
     } finally {
       setLoadingMp(false);
     }
@@ -396,6 +398,13 @@ export function CartDrawer() {
           </div>
         )}
       </aside>
+
+      <NoticeDialog
+        open={Boolean(notice)}
+        title="No se pudo continuar"
+        message={notice || ""}
+        onClose={() => setNotice(null)}
+      />
     </>
   );
 }

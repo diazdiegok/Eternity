@@ -9,6 +9,7 @@ import { AdminOrders } from "@/components/AdminOrders";
 import { AdminCoupons } from "@/components/AdminCoupons";
 import { AdminPromotions } from "@/components/AdminPromotions";
 import { AdminCategories } from "@/components/AdminCategories";
+import { ConfirmDialog, NoticeDialog } from "@/components/ConfirmDialog";
 
 type Product = {
   id: string;
@@ -49,6 +50,9 @@ export function AdminPanel() {
   const [message, setMessage] = useState("");
   const [selectedFileName, setSelectedFileName] = useState("");
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [tab, setTab] = useState<
     | "dashboard"
     | "orders"
@@ -145,7 +149,7 @@ export function AdminPanel() {
     if (json.url) {
       setForm((f) => ({ ...f, imageUrl: json.url }));
     } else {
-      alert(json.error || "Error al subir imagen");
+      setNotice(json.error || "Error al subir imagen");
       setSelectedFileName("");
     }
   }
@@ -222,9 +226,12 @@ export function AdminPanel() {
     await loadProducts();
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar este producto?")) return;
-    await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    setDeleting(true);
+    await fetch(`/api/admin/products/${pendingDeleteId}`, { method: "DELETE" });
+    setPendingDeleteId(null);
+    setDeleting(false);
     await loadProducts();
   }
 
@@ -626,7 +633,7 @@ export function AdminPanel() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleDelete(product.id)}
+                  onClick={() => setPendingDeleteId(product.id)}
                   className="rounded-full border border-red-200 px-3 py-1.5 text-sm text-red-600"
                 >
                   Eliminar
@@ -638,6 +645,22 @@ export function AdminPanel() {
       </section>
         </>
       )}
+
+      <ConfirmDialog
+        open={Boolean(pendingDeleteId)}
+        title="Eliminar producto"
+        message="¿Eliminar este producto del catálogo? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
+      <NoticeDialog
+        open={Boolean(notice)}
+        title="No se pudo subir"
+        message={notice || ""}
+        onClose={() => setNotice(null)}
+      />
     </main>
   );
 }
