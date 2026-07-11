@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "customerEmail" TEXT;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "shippingCarrier" TEXT;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "trackingCode" TEXT;

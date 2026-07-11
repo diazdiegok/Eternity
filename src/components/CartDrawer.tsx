@@ -30,6 +30,7 @@ export function CartDrawer() {
   const [submitting, setSubmitting] = useState(false);
   const [completedCode, setCompletedCode] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     fetch("/api/checkout/mercadopago")
@@ -81,11 +82,22 @@ export function CartDrawer() {
   const orderPayload = {
     items,
     note,
+    email: email.trim(),
     couponCode: coupon?.code || null,
     discountPercent: coupon?.percentOff || 0,
   };
 
+  function requireEmail() {
+    const value = email.trim();
+    if (!value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      setNotice("Ingresá un correo válido para enviarte el pedido");
+      return false;
+    }
+    return true;
+  }
+
   async function handleMercadoPago() {
+    if (!requireEmail()) return;
     setLoadingMp(true);
     try {
       const res = await fetch("/api/checkout/mercadopago", {
@@ -96,6 +108,7 @@ export function CartDrawer() {
       const data = await res.json();
       if (data.checkoutUrl) {
         clearCart();
+        setEmail("");
         window.location.href = data.checkoutUrl;
         return;
       }
@@ -109,6 +122,7 @@ export function CartDrawer() {
 
   async function handleWhatsApp() {
     if (submitting || items.length === 0) return;
+    if (!requireEmail()) return;
     setSubmitting(true);
 
     const cartSnapshot = [...items];
@@ -129,9 +143,12 @@ export function CartDrawer() {
         body: JSON.stringify({ ...orderPayload, channel: "whatsapp" }),
       });
       const data = await res.json().catch(() => ({}));
-      if (res.ok && data.code) {
-        orderCode = String(data.code);
+      if (!res.ok) {
+        setNotice(data.error || "No se pudo registrar el pedido");
+        setSubmitting(false);
+        return;
       }
+      if (data.code) orderCode = String(data.code);
     } catch {
       // Si falla el registro, igual abrimos WhatsApp
     }
@@ -145,6 +162,7 @@ export function CartDrawer() {
     clearCart();
     clearCoupon();
     setNote("");
+    setEmail("");
     setCouponInput("");
     setCouponMsg("");
     setCompletedCode(orderCode || "registrado");
@@ -210,7 +228,8 @@ export function CartDrawer() {
                   </p>
                 )}
                 <p className="mt-4 text-sm text-[#8a7b6e]">
-                  Enviá el mensaje en WhatsApp para confirmarlo con nosotros.
+                  Te enviamos el detalle al correo y abrimos WhatsApp para
+                  confirmarlo.
                 </p>
               </div>
               <button
@@ -293,6 +312,24 @@ export function CartDrawer() {
 
         {!showSuccess && items.length > 0 && (
           <div className="space-y-4 border-t border-[#e4d5c5] bg-white/50 p-5 backdrop-blur-sm">
+            <div>
+              <label className="text-xs font-medium uppercase tracking-[0.14em] text-[#8a7b6e]">
+                Correo electrónico *
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="para enviarte el pedido"
+                required
+                className="mt-1.5 w-full rounded-2xl border border-[#e4d5c5] bg-white px-3 py-2.5 text-sm text-[#4a3b30] outline-none transition focus:border-[#a67c52] focus:ring-2 focus:ring-[#a67c52]/20"
+              />
+              <p className="mt-1 text-xs text-[#9a8b7e]">
+                Te mandamos el N° de orden y el detalle. Después podés consultarlo
+                arriba a la derecha.
+              </p>
+            </div>
+
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}

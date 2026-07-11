@@ -22,14 +22,33 @@ export async function POST(request: NextRequest) {
 
   try {
     const discountPercent = body.discountPercent != null ? Number(body.discountPercent) : 0;
+    const email = body.email ? String(body.email).trim().toLowerCase() : "";
     const order = await createOrder({
       channel: "mercadopago",
       items,
       customerNote: note,
+      customerEmail: email || undefined,
       status: "pending",
       couponCode: body.couponCode ? String(body.couponCode) : null,
       discountPercent,
     });
+
+    if (email) {
+      try {
+        const { sendOrderReceivedEmail } = await import("@/lib/email");
+        await sendOrderReceivedEmail(email, {
+          code: order.code,
+          createdAt: order.createdAt,
+          total: order.total,
+          customerNote: order.customerNote,
+          couponCode: order.couponCode,
+          discountAmount: order.discountAmount,
+          items: order.items,
+        });
+      } catch (mailError) {
+        console.error("MP order email error:", mailError);
+      }
+    }
 
     const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
     const factor =

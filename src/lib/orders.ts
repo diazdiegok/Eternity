@@ -31,6 +31,7 @@ export async function createOrder(input: {
   items: CartItem[];
   customerName?: string;
   customerPhone?: string;
+  customerEmail?: string;
   customerNote?: string;
   status?: OrderStatus;
   mpPreferenceId?: string;
@@ -68,6 +69,7 @@ export async function createOrder(input: {
       status: input.status || "pending",
       customerName: input.customerName || null,
       customerPhone: input.customerPhone || null,
+      customerEmail: input.customerEmail || null,
       customerNote: input.customerNote || "",
       total,
       couponCode: input.couponCode || null,

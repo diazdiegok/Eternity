@@ -41,12 +41,15 @@ model Order {
   status          String      @default("pending")
   customerName    String?
   customerPhone   String?
+  customerEmail  String?
   customerNote    String      @default("")
   total           Float
   couponCode      String?
   discountPercent Float?
   discountAmount  Float       @default(0)
   mpPreferenceId  String?
+  shippingCarrier String?
+  trackingCode    String?
   items           OrderItem[]
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt

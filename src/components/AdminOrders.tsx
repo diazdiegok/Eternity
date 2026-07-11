@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { formatPrice } from "@/lib/whatsapp";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { SHIPPING_CARRIERS } from "@/lib/shipping";
 
 type Product = {
   id: string;
@@ -26,8 +27,11 @@ type Order = {
   status: string;
   customerName: string | null;
   customerPhone: string | null;
+  customerEmail: string | null;
   customerNote: string;
   total: number;
+  shippingCarrier: string | null;
+  trackingCode: string | null;
   createdAt: string;
   items: OrderItem[];
 };
@@ -81,14 +85,21 @@ export function AdminOrders({ products }: { products: Product[] }) {
   const [editForm, setEditForm] = useState({
     customerName: "",
     customerPhone: "",
+    customerEmail: "",
     customerNote: "",
     status: "completed",
     createdAt: "",
+    shippingCarrier: "Via Cargo",
+    trackingCode: "",
   });
   const [editItems, setEditItems] = useState<EditItem[]>([]);
   const [editSaving, setEditSaving] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [shipOrder, setShipOrder] = useState<Order | null>(null);
+  const [shipCarrier, setShipCarrier] = useState("Via Cargo");
+  const [shipTracking, setShipTracking] = useState("");
+  const [shipSaving, setShipSaving] = useState(false);
 
   const activeProducts = useMemo(
     () => products.filter((p) => p.active),
@@ -125,6 +136,16 @@ export function AdminOrders({ products }: { products: Product[] }) {
   );
 
   async function updateStatus(id: string, status: string) {
+    if (status === "completed") {
+      const order = orders.find((o) => o.id === id);
+      if (!order) return;
+      setShipOrder(order);
+      setShipCarrier(order.shippingCarrier || "Via Cargo");
+      setShipTracking(order.trackingCode || "");
+      setMessage("");
+      return;
+    }
+
     const res = await fetch(`/api/admin/orders/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -133,7 +154,46 @@ export function AdminOrders({ products }: { products: Product[] }) {
     if (res.ok) {
       const updated = await res.json();
       setOrders((prev) => prev.map((o) => (o.id === id ? updated : o)));
+    } else {
+      const json = await res.json().catch(() => ({}));
+      setMessage(json.error || "No se pudo actualizar el estado");
     }
+  }
+
+  async function confirmShip(e: FormEvent) {
+    e.preventDefault();
+    if (!shipOrder) return;
+    if (!shipCarrier.trim() || !shipTracking.trim()) {
+      setMessage("Completá empresa y N° de seguimiento");
+      return;
+    }
+
+    setShipSaving(true);
+    setMessage("");
+    const res = await fetch(`/api/admin/orders/${shipOrder.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: "completed",
+        shippingCarrier: shipCarrier.trim(),
+        trackingCode: shipTracking.trim(),
+      }),
+    });
+    const json = await res.json().catch(() => ({}));
+    setShipSaving(false);
+
+    if (!res.ok) {
+      setMessage(json.error || "No se pudo marcar como completado");
+      return;
+    }
+
+    setOrders((prev) => prev.map((o) => (o.id === json.id ? json : o)));
+    setShipOrder(null);
+    setMessage(
+      json.emailSent
+        ? `Pedido ${json.code} en envío. Correo de seguimiento enviado.`
+        : `Pedido ${json.code} en envío.${json.customerEmail ? " (No se pudo enviar el correo)" : " Sin correo del cliente."}`
+    );
   }
 
   function startEdit(order: Order) {
@@ -141,9 +201,12 @@ export function AdminOrders({ products }: { products: Product[] }) {
     setEditForm({
       customerName: order.customerName || "",
       customerPhone: order.customerPhone || "",
+      customerEmail: order.customerEmail || "",
       customerNote: order.customerNote || "",
       status: toOrderStatus(order.status),
       createdAt: toDatetimeLocalValue(order.createdAt),
+      shippingCarrier: order.shippingCarrier || "Via Cargo",
+      trackingCode: order.trackingCode || "",
     });
     setEditItems(
       order.items.map((item) => ({
@@ -197,7 +260,10 @@ export function AdminOrders({ products }: { products: Product[] }) {
         ...editForm,
         customerName: editForm.customerName,
         customerPhone: editForm.customerPhone,
+        customerEmail: editForm.customerEmail,
         customerNote: editForm.customerNote,
+        shippingCarrier: editForm.shippingCarrier,
+        trackingCode: editForm.trackingCode,
         createdAt: editForm.createdAt
           ? new Date(editForm.createdAt).toISOString()
           : undefined,
@@ -219,7 +285,11 @@ export function AdminOrders({ products }: { products: Product[] }) {
 
     const updated = await res.json();
     setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
-    setMessage("Pedido actualizado");
+    setMessage(
+      updated.emailSent
+        ? "Pedido actualizado y correo de envío enviado"
+        : "Pedido actualizado"
+    );
     cancelEdit();
   }
 
@@ -430,6 +500,21 @@ export function AdminOrders({ products }: { products: Product[] }) {
                         />
                       </label>
                       <label className="text-sm font-medium text-[#5c4a3d] sm:col-span-2">
+                        Correo
+                        <input
+                          type="email"
+                          value={editForm.customerEmail}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              customerEmail: e.target.value,
+                            })
+                          }
+                          className={inputClass}
+                          placeholder="cliente@email.com"
+                        />
+                      </label>
+                      <label className="text-sm font-medium text-[#5c4a3d] sm:col-span-2">
                         Nota
                         <input
                           value={editForm.customerNote}
@@ -471,6 +556,39 @@ export function AdminOrders({ products }: { products: Product[] }) {
                           }
                           className={inputClass}
                           required
+                        />
+                      </label>
+                      <label className="text-sm font-medium text-[#5c4a3d]">
+                        Empresa de envío
+                        <select
+                          value={editForm.shippingCarrier}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              shippingCarrier: e.target.value,
+                            })
+                          }
+                          className={inputClass}
+                        >
+                          {SHIPPING_CARRIERS.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="text-sm font-medium text-[#5c4a3d]">
+                        N° de seguimiento
+                        <input
+                          value={editForm.trackingCode}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              trackingCode: e.target.value,
+                            })
+                          }
+                          className={inputClass}
+                          placeholder="Código de tracking"
                         />
                       </label>
                     </div>
@@ -608,9 +726,22 @@ export function AdminOrders({ products }: { products: Product[] }) {
                         <p className="mt-1 text-sm text-[#8a7b6e]">
                           {new Date(order.createdAt).toLocaleString("es-AR")}
                         </p>
-                        {(order.customerName || order.customerPhone) && (
+                        {(order.customerName ||
+                          order.customerPhone ||
+                          order.customerEmail) && (
                           <p className="mt-1 text-sm text-[#6d5c4d]">
-                            {[order.customerName, order.customerPhone]
+                            {[
+                              order.customerName,
+                              order.customerPhone,
+                              order.customerEmail,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        )}
+                        {(order.shippingCarrier || order.trackingCode) && (
+                          <p className="mt-1 text-sm text-[#a67c52]">
+                            {[order.shippingCarrier, order.trackingCode]
                               .filter(Boolean)
                               .join(" · ")}
                           </p>
@@ -679,6 +810,70 @@ export function AdminOrders({ products }: { products: Product[] }) {
         onConfirm={confirmDelete}
         onCancel={() => setPendingDeleteId(null)}
       />
+
+      {shipOrder && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Cerrar"
+            className="absolute inset-0 bg-[#4a3b30]/40 backdrop-blur-[2px]"
+            onClick={() => setShipOrder(null)}
+          />
+          <form
+            onSubmit={confirmShip}
+            className="relative w-full max-w-md rounded-3xl border border-[#e4d5c5] bg-[#f7f1ea] p-6 shadow-2xl"
+          >
+            <h3 className="font-serif text-2xl text-[#4a3b30]">
+              Marcar en envío
+            </h3>
+            <p className="mt-1 text-sm text-[#8a7b6e]">
+              Pedido {shipOrder.code}. Al completar se envía el correo con el
+              seguimiento{shipOrder.customerEmail ? ` a ${shipOrder.customerEmail}` : ""}.
+            </p>
+            <label className="mt-4 block text-sm font-medium text-[#5c4a3d]">
+              Empresa
+              <select
+                value={shipCarrier}
+                onChange={(e) => setShipCarrier(e.target.value)}
+                className={inputClass}
+                required
+              >
+                {SHIPPING_CARRIERS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="mt-3 block text-sm font-medium text-[#5c4a3d]">
+              N° / código de seguimiento
+              <input
+                value={shipTracking}
+                onChange={(e) => setShipTracking(e.target.value)}
+                className={inputClass}
+                placeholder="Ej: 123456789"
+                required
+              />
+            </label>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShipOrder(null)}
+                className="rounded-full border border-[#e4d5c5] bg-white px-4 py-2.5 text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={shipSaving}
+                className="rounded-full bg-[#4a3b30] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+              >
+                {shipSaving ? "Guardando..." : "Completar y avisar"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
