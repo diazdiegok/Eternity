@@ -8,6 +8,11 @@ export const SITE = {
   whatsapp: "5493435001061",
   instagram: "https://www.instagram.com/eternity.recuerdos",
   currency: "ARS",
+  transfer: {
+    alias: "vale.fonta",
+    cvu: "0000003100078490743361",
+    holder: "Valentina Fontanetto Masset",
+  },
 } as const;
 
 /** URL pública de producción (fallback si falta env en Render) */

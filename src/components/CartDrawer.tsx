@@ -10,6 +10,7 @@ import {
   isValidAreaCode,
   isValidLocalPhone,
 } from "@/lib/phone";
+import { SITE } from "@/lib/config";
 import { useCart } from "@/context/CartContext";
 import { WhatsAppIcon } from "@/components/Icons";
 import { NoticeDialog } from "@/components/ConfirmDialog";
@@ -45,6 +46,8 @@ export function CartDrawer() {
   const [areaCode, setAreaCode] = useState(DEFAULT_AREA_CODE);
   const [phoneLocal, setPhoneLocal] = useState("");
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [showTransfer, setShowTransfer] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/checkout/mercadopago")
@@ -269,6 +272,16 @@ export function CartDrawer() {
     setEmailSent(sent);
     setWhatsappUrl(url);
     setCompletedCode(orderCode || "registrado");
+  }
+
+  async function copyTransferValue(label: string, value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(label);
+      window.setTimeout(() => setCopiedField(null), 1800);
+    } catch {
+      setNotice(`No se pudo copiar. Anotá: ${value}`);
+    }
   }
 
   const itemCount = items.reduce((n, i) => n + i.quantity, 0);
@@ -553,16 +566,25 @@ export function CartDrawer() {
 
             <button
               type="button"
+              onClick={() => setShowTransfer(true)}
+              disabled={loadingMp || submitting}
+              className="btn-press w-full rounded-full border border-[#e4d5c5] bg-white py-3.5 font-medium text-[#4a3b30] hover:bg-[#faf6f1] disabled:opacity-60"
+            >
+              Transferencia
+            </button>
+
+            <button
+              type="button"
               onClick={handleConfirmOrder}
               disabled={submitting || loadingMp}
-              className="btn-press w-full rounded-full border border-[#e4d5c5] bg-white py-3.5 font-medium text-[#4a3b30] hover:bg-[#faf6f1] disabled:opacity-60"
+              className="btn-press w-full rounded-full bg-[#4a3b30] py-3.5 font-medium text-white hover:bg-[#5c4a3d] disabled:opacity-60"
             >
               {submitting ? "Registrando..." : "Confirmar pedido"}
             </button>
 
             <p className="text-center text-xs text-[#8a7b6e]">
-              Con Mercado Pago pagás online. Al confirmar sin MP: correo + WhatsApp
-              al negocio.
+              Si pagás por transferencia, mirá los datos y después confirmá el
+              pedido.
             </p>
 
             <button
@@ -575,6 +597,90 @@ export function CartDrawer() {
           </div>
         )}
       </aside>
+
+      {showTransfer && (
+        <div className="fixed inset-0 z-[80] flex items-start justify-center px-4 pt-[12vh] sm:pt-[15vh]">
+          <button
+            type="button"
+            aria-label="Cerrar"
+            className="absolute inset-0 bg-[#4a3b30]/45 backdrop-blur-[2px]"
+            onClick={() => setShowTransfer(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="transfer-title"
+            className="relative w-full max-w-sm rounded-3xl border border-[#e4d5c5] bg-[#f7f1ea] p-5 shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#a67c52]">
+                  Datos bancarios
+                </p>
+                <h3
+                  id="transfer-title"
+                  className="mt-1 font-serif text-2xl text-[#4a3b30]"
+                >
+                  Transferencia
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTransfer(false)}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#6d5c4d] transition hover:bg-[#efe4d8]"
+              >
+                ✕
+              </button>
+            </div>
+
+            <ul className="mt-4 space-y-3">
+              {(
+                [
+                  ["Alias", SITE.transfer.alias],
+                  ["CVU", SITE.transfer.cvu],
+                  ["Nombre", SITE.transfer.holder],
+                ] as const
+              ).map(([label, value]) => (
+                <li
+                  key={label}
+                  className="rounded-2xl border border-[#e4d5c5] bg-white px-3.5 py-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-[#a67c52]">
+                        {label}
+                      </p>
+                      <p className="mt-1 break-all font-medium text-[#4a3b30]">
+                        {value}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copyTransferValue(label, value)}
+                      className="shrink-0 rounded-full border border-[#e4d5c5] px-3 py-1.5 text-xs text-[#5c4a3d] hover:bg-[#faf6f1]"
+                    >
+                      {copiedField === label ? "Copiado" : "Copiar"}
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <p className="mt-4 text-sm text-[#6d5c4d]">
+              Transferí el total ({formatPrice(total)}) y después tocá{" "}
+              <strong>Confirmar pedido</strong> para registrarlo.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setShowTransfer(false)}
+              className="mt-4 w-full rounded-full bg-[#4a3b30] px-4 py-3 text-sm font-medium text-white"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
 
       {editingItem && (
         <div className="fixed inset-0 z-[80] flex items-start justify-center px-4 pt-[12vh] sm:pt-[15vh]">
