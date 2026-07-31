@@ -3,10 +3,9 @@
 import { useEffect, useState } from "react";
 import { buildWhatsAppUrl, formatPrice } from "@/lib/whatsapp";
 import {
-  DEFAULT_AREA_CODE,
-  PHONE_AREA_CODES,
   buildWhatsAppPhone,
   formatDisplayPhone,
+  isValidAreaCode,
   isValidLocalPhone,
 } from "@/lib/phone";
 import { useCart } from "@/context/CartContext";
@@ -41,7 +40,7 @@ export function CartDrawer() {
   const [notice, setNotice] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [customerName, setCustomerName] = useState("");
-  const [areaCode, setAreaCode] = useState(DEFAULT_AREA_CODE);
+  const [areaCode, setAreaCode] = useState("");
   const [phoneLocal, setPhoneLocal] = useState("");
 
   useEffect(() => {
@@ -74,7 +73,7 @@ export function CartDrawer() {
     setNote("");
     setEmail("");
     setCustomerName("");
-    setAreaCode(DEFAULT_AREA_CODE);
+    setAreaCode("");
     setPhoneLocal("");
     setCouponInput("");
     setCouponMsg("");
@@ -124,8 +123,8 @@ export function CartDrawer() {
       setNotice("Ingresá tu nombre y apellido");
       return false;
     }
-    if (!isValidLocalPhone(phoneLocal)) {
-      setNotice("Ingresá un teléfono válido (sin 0 ni 15)");
+    if (!isValidAreaCode(areaCode) || !isValidLocalPhone(phoneLocal)) {
+      setNotice("Ingresá característica y número válidos (sin 0 ni 15)");
       return false;
     }
     if (!getCustomerPhoneWa()) {
@@ -447,19 +446,18 @@ export function CartDrawer() {
               <label className="text-xs font-medium uppercase tracking-[0.14em] text-[#8a7b6e]">
                 Teléfono / WhatsApp *
               </label>
-              <div className="mt-1.5 flex gap-2">
-                <select
+              <div className="mt-1.5 grid grid-cols-[5.5rem_1fr] gap-2">
+                <input
+                  type="tel"
+                  inputMode="numeric"
                   value={areaCode}
-                  onChange={(e) => setAreaCode(e.target.value)}
+                  onChange={(e) =>
+                    setAreaCode(e.target.value.replace(/\D/g, "").slice(0, 4))
+                  }
+                  placeholder="Caract."
                   aria-label="Característica"
-                  className="w-[42%] rounded-2xl border border-[#e4d5c5] bg-white px-2 py-2.5 text-sm text-[#4a3b30] outline-none focus:border-[#a67c52] sm:w-[38%]"
-                >
-                  {PHONE_AREA_CODES.map((area) => (
-                    <option key={area.code} value={area.code}>
-                      {area.label}
-                    </option>
-                  ))}
-                </select>
+                  className="rounded-2xl border border-[#e4d5c5] bg-white px-2 py-2.5 text-center text-sm text-[#4a3b30] outline-none transition focus:border-[#a67c52] focus:ring-2 focus:ring-[#a67c52]/20"
+                />
                 <input
                   type="tel"
                   inputMode="numeric"
@@ -467,13 +465,13 @@ export function CartDrawer() {
                   onChange={(e) =>
                     setPhoneLocal(e.target.value.replace(/[^\d\s-]/g, ""))
                   }
-                  placeholder="Número (sin 0 ni 15)"
+                  placeholder="Número"
                   autoComplete="tel-national"
-                  className="min-w-0 flex-1 rounded-2xl border border-[#e4d5c5] bg-white px-3 py-2.5 text-sm text-[#4a3b30] outline-none transition focus:border-[#a67c52] focus:ring-2 focus:ring-[#a67c52]/20"
+                  className="min-w-0 rounded-2xl border border-[#e4d5c5] bg-white px-3 py-2.5 text-sm text-[#4a3b30] outline-none transition focus:border-[#a67c52] focus:ring-2 focus:ring-[#a67c52]/20"
                 />
               </div>
               <p className="mt-1 text-xs text-[#9a8b7e]">
-                Elegí la característica y el número. Te contactamos por WhatsApp.
+                Característica + número, sin 0 ni 15. Ej: 343 · 5001061
               </p>
             </div>
 
