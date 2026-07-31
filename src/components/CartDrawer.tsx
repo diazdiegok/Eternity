@@ -44,7 +44,7 @@ export function CartDrawer() {
   const [customerName, setCustomerName] = useState("");
   const [areaCode, setAreaCode] = useState(DEFAULT_AREA_CODE);
   const [phoneLocal, setPhoneLocal] = useState("");
-  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/checkout/mercadopago")
@@ -78,7 +78,7 @@ export function CartDrawer() {
     setCustomerName("");
     setAreaCode(DEFAULT_AREA_CODE);
     setPhoneLocal("");
-    setExpandedItemId(null);
+    setEditingItemId(null);
     setCouponInput("");
     setCouponMsg("");
   }
@@ -272,6 +272,7 @@ export function CartDrawer() {
   }
 
   const itemCount = items.reduce((n, i) => n + i.quantity, 0);
+  const editingItem = items.find((i) => i.id === editingItemId) || null;
 
   const showSuccess = Boolean(completedCode) && items.length === 0;
 
@@ -368,90 +369,26 @@ export function CartDrawer() {
             </div>
           ) : (
             <ul className="space-y-2">
-              {items.map((item) => {
-                const expanded = expandedItemId === item.id;
-                return (
-                  <li
-                    key={item.id}
-                    className="rounded-2xl border border-[#e4d5c5] bg-white px-3.5 py-3 shadow-sm"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="min-w-0 truncate font-medium text-[#4a3b30]">
-                        <span className="text-[#8a7b6e]">({item.quantity})</span>{" "}
-                        {item.name}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setExpandedItemId((id) =>
-                            id === item.id ? null : item.id
-                          )
-                        }
-                        className="shrink-0 text-sm text-[#a67c52] underline-offset-2 hover:text-[#4a3b30] hover:underline"
-                      >
-                        {expanded ? "Listo" : "Modificar"}
-                      </button>
-                    </div>
-
-                    {expanded && (
-                      <div className="mt-3 border-t border-[#efe4d8] pt-3">
-                        {item.originalPrice &&
-                        item.originalPrice > item.price ? (
-                          <p className="text-sm text-[#8a7b6e]">
-                            <span className="mr-1.5 line-through decoration-[#c45c26]/70">
-                              {formatPrice(item.originalPrice)}
-                            </span>
-                            <span className="text-[#c45c26]">
-                              {formatPrice(item.price)} c/u
-                            </span>
-                          </p>
-                        ) : (
-                          <p className="text-sm text-[#8a7b6e]">
-                            {formatPrice(item.price)} c/u
-                          </p>
-                        )}
-                        <div className="mt-3 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity - 1)
-                              }
-                              className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e4d5c5] text-[#4a3b30] transition hover:bg-[#f7f1ea]"
-                            >
-                              −
-                            </button>
-                            <span className="w-6 text-center text-[#4a3b30]">
-                              {item.quantity}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity + 1)
-                              }
-                              className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e4d5c5] text-[#4a3b30] transition hover:bg-[#f7f1ea]"
-                            >
-                              +
-                            </button>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <p className="font-serif text-lg text-[#4a3b30]">
-                              {formatPrice(item.price * item.quantity)}
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() => removeItem(item.id)}
-                              className="text-sm text-[#a67c52] transition hover:text-[#4a3b30]"
-                            >
-                              Quitar
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
+              {items.map((item) => (
+                <li
+                  key={item.id}
+                  className="rounded-2xl border border-[#e4d5c5] bg-white px-3.5 py-3 shadow-sm"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="min-w-0 truncate font-medium text-[#4a3b30]">
+                      <span className="text-[#8a7b6e]">({item.quantity})</span>{" "}
+                      {item.name}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setEditingItemId(item.id)}
+                      className="shrink-0 text-sm text-[#a67c52] underline-offset-2 hover:text-[#4a3b30] hover:underline"
+                    >
+                      Modificar
+                    </button>
+                  </div>
+                </li>
+              ))}
             </ul>
           )}
         </div>
@@ -638,6 +575,109 @@ export function CartDrawer() {
           </div>
         )}
       </aside>
+
+      {editingItem && (
+        <div className="fixed inset-0 z-[80] flex items-start justify-center px-4 pt-[12vh] sm:pt-[15vh]">
+          <button
+            type="button"
+            aria-label="Cerrar"
+            className="absolute inset-0 bg-[#4a3b30]/45 backdrop-blur-[2px]"
+            onClick={() => setEditingItemId(null)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-cart-item-title"
+            className="relative w-full max-w-sm rounded-3xl border border-[#e4d5c5] bg-[#f7f1ea] p-5 shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#a67c52]">
+                  Modificar
+                </p>
+                <h3
+                  id="edit-cart-item-title"
+                  className="mt-1 font-serif text-xl text-[#4a3b30]"
+                >
+                  {editingItem.name}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingItemId(null)}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#6d5c4d] transition hover:bg-[#efe4d8]"
+              >
+                ✕
+              </button>
+            </div>
+
+            {editingItem.originalPrice &&
+            editingItem.originalPrice > editingItem.price ? (
+              <p className="mt-3 text-sm text-[#8a7b6e]">
+                <span className="mr-1.5 line-through decoration-[#c45c26]/70">
+                  {formatPrice(editingItem.originalPrice)}
+                </span>
+                <span className="text-[#c45c26]">
+                  {formatPrice(editingItem.price)} c/u
+                </span>
+              </p>
+            ) : (
+              <p className="mt-3 text-sm text-[#8a7b6e]">
+                {formatPrice(editingItem.price)} c/u
+              </p>
+            )}
+
+            <div className="mt-5 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateQuantity(editingItem.id, editingItem.quantity - 1)
+                  }
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-[#e4d5c5] bg-white text-[#4a3b30] transition hover:bg-[#faf6f1]"
+                >
+                  −
+                </button>
+                <span className="w-8 text-center text-lg text-[#4a3b30]">
+                  {editingItem.quantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateQuantity(editingItem.id, editingItem.quantity + 1)
+                  }
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-[#e4d5c5] bg-white text-[#4a3b30] transition hover:bg-[#faf6f1]"
+                >
+                  +
+                </button>
+              </div>
+              <p className="font-serif text-2xl text-[#4a3b30]">
+                {formatPrice(editingItem.price * editingItem.quantity)}
+              </p>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => setEditingItemId(null)}
+                className="rounded-full bg-[#4a3b30] px-4 py-3 text-sm font-medium text-white"
+              >
+                Listo
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  removeItem(editingItem.id);
+                  setEditingItemId(null);
+                }}
+                className="rounded-full border border-red-200 bg-white px-4 py-2.5 text-sm text-red-600"
+              >
+                Quitar del carrito
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <NoticeDialog
         open={Boolean(notice)}
