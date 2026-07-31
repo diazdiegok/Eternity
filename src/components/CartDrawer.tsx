@@ -299,12 +299,23 @@ export function CartDrawer() {
       />
 
       <aside className="animate-drawer-in fixed bottom-0 right-0 top-0 z-50 flex w-full max-w-md flex-col bg-[#f7f1ea] shadow-2xl sm:rounded-l-3xl">
-        <div className="flex items-center justify-between border-b border-[#e4d5c5] px-5 py-4">
-          <div>
-            <h2 className="font-serif text-2xl text-[#4a3b30]">
-              {showSuccess ? "Pedido registrado" : "Tu carrito"}
-            </h2>
-            <p className="text-xs text-[#8a7b6e]">
+        <div className="flex items-start justify-between gap-3 border-b border-[#e4d5c5] px-5 py-4">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <h2 className="font-serif text-2xl text-[#4a3b30]">
+                {showSuccess ? "Pedido registrado" : "Tu carrito"}
+              </h2>
+              {!showSuccess && items.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearCart}
+                  className="text-sm text-[#a67c52] underline-offset-2 hover:text-[#4a3b30] hover:underline"
+                >
+                  Vaciar carrito
+                </button>
+              )}
+            </div>
+            <p className="mt-0.5 text-xs text-[#8a7b6e]">
               {showSuccess
                 ? "Correo enviado · aviso al negocio"
                 : items.length === 0
@@ -315,7 +326,7 @@ export function CartDrawer() {
           <button
             type="button"
             onClick={handleClose}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-[#6d5c4d] transition hover:bg-[#efe4d8]"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#6d5c4d] transition hover:bg-[#efe4d8]"
           >
             ✕
           </button>
@@ -323,7 +334,7 @@ export function CartDrawer() {
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {showSuccess ? (
-            <div className="flex h-full flex-col items-center justify-center gap-4 px-4 text-center">
+            <div className="flex min-h-full flex-col items-center justify-center gap-4 px-4 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#e8f5e9] text-2xl text-green-700">
                 ✓
               </div>
@@ -374,40 +385,40 @@ export function CartDrawer() {
               </div>
             </div>
           ) : items.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+            <div className="flex min-h-full flex-col items-center justify-center gap-2 text-center">
               <p className="font-serif text-xl text-[#4a3b30]">Todavía vacío</p>
               <p className="text-sm text-[#8a7b6e]">
                 Agregá una pieza para empezar tu pedido.
               </p>
             </div>
           ) : (
-            <ul className="space-y-2">
-              {items.map((item) => (
-                <li
-                  key={item.id}
-                  className="rounded-2xl border border-[#e4d5c5] bg-white px-3.5 py-3 shadow-sm"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="min-w-0 truncate font-medium text-[#4a3b30]">
-                      {item.name}{" "}
-                      <span className="text-[#8a7b6e]">({item.quantity})</span>
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setEditingItemId(item.id)}
-                      className="shrink-0 text-sm text-[#a67c52] underline-offset-2 hover:text-[#4a3b30] hover:underline"
-                    >
-                      Modificar
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+            <div className="space-y-5 pb-2">
+              <ul className="space-y-2">
+                {items.map((item) => (
+                  <li
+                    key={item.id}
+                    className="rounded-2xl border border-[#e4d5c5] bg-white px-3.5 py-3 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="min-w-0 flex-1 font-medium leading-snug text-[#4a3b30]">
+                        {item.name}{" "}
+                        <span className="whitespace-nowrap text-[#8a7b6e]">
+                          ({item.quantity})
+                        </span>
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setEditingItemId(item.id)}
+                        className="shrink-0 text-sm text-[#a67c52] underline-offset-2 hover:text-[#4a3b30] hover:underline"
+                      >
+                        Modificar
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
 
-        {!showSuccess && items.length > 0 && (
-          <div className="space-y-4 border-t border-[#e4d5c5] bg-white/50 p-5 backdrop-blur-sm">
+              <div className="space-y-4 border-t border-[#e4d5c5] pt-5">
             <div>
               <label className="text-xs font-medium uppercase tracking-[0.14em] text-[#8a7b6e]">
                 Nombre y apellido *
@@ -568,7 +579,7 @@ export function CartDrawer() {
               type="button"
               onClick={() => setShowTransfer(true)}
               disabled={loadingMp || submitting}
-              className="btn-press w-full rounded-full border border-[#e4d5c5] bg-white py-3.5 font-medium text-[#4a3b30] hover:bg-[#faf6f1] disabled:opacity-60"
+              className="btn-press w-full rounded-full bg-[#2f6f5e] py-3.5 font-medium text-white shadow-[0_12px_28px_-14px_rgba(47,111,94,0.7)] transition hover:bg-[#265a4c] disabled:opacity-60"
             >
               Transferencia
             </button>
@@ -581,21 +592,10 @@ export function CartDrawer() {
             >
               {submitting ? "Registrando..." : "Confirmar pedido"}
             </button>
-
-            <p className="text-center text-xs text-[#8a7b6e]">
-              Si pagás por transferencia, mirá los datos y después confirmá el
-              pedido.
-            </p>
-
-            <button
-              type="button"
-              onClick={clearCart}
-              className="w-full text-sm text-[#8a7b6e] transition hover:text-[#4a3b30]"
-            >
-              Vaciar carrito
-            </button>
-          </div>
-        )}
+              </div>
+            </div>
+          )}
+        </div>
       </aside>
 
       {showTransfer && (
