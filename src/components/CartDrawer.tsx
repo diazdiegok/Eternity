@@ -373,86 +373,82 @@ export function CartDrawer() {
                 return (
                   <li
                     key={item.id}
-                    className="group rounded-2xl border border-[#e4d5c5] bg-white px-3.5 py-3 shadow-sm"
-                    onMouseEnter={() => setExpandedItemId(item.id)}
-                    onMouseLeave={() => setExpandedItemId(null)}
+                    className="rounded-2xl border border-[#e4d5c5] bg-white px-3.5 py-3 shadow-sm"
                   >
-                    <button
-                      type="button"
-                      className="flex w-full items-center justify-between gap-3 text-left"
-                      onClick={() =>
-                        setExpandedItemId((id) =>
-                          id === item.id ? null : item.id
-                        )
-                      }
-                    >
-                      <p className="truncate font-medium text-[#4a3b30]">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="min-w-0 truncate font-medium text-[#4a3b30]">
+                        <span className="text-[#8a7b6e]">({item.quantity})</span>{" "}
                         {item.name}
                       </p>
-                      <span className="shrink-0 text-xs text-[#a67c52] sm:hidden">
-                        {expanded ? "−" : "+"}
-                      </span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedItemId((id) =>
+                            id === item.id ? null : item.id
+                          )
+                        }
+                        className="shrink-0 text-sm text-[#a67c52] underline-offset-2 hover:text-[#4a3b30] hover:underline"
+                      >
+                        {expanded ? "Listo" : "Modificar"}
+                      </button>
+                    </div>
 
-                    <div
-                      className={`overflow-hidden transition-all ${
-                        expanded
-                          ? "mt-3 max-h-40 border-t border-[#efe4d8] pt-3 opacity-100"
-                          : "max-h-0 opacity-0 group-hover:mt-3 group-hover:max-h-40 group-hover:border-t group-hover:border-[#efe4d8] group-hover:pt-3 group-hover:opacity-100"
-                      }`}
-                    >
-                      {item.originalPrice && item.originalPrice > item.price ? (
-                        <p className="text-sm text-[#8a7b6e]">
-                          <span className="mr-1.5 line-through decoration-[#c45c26]/70">
-                            {formatPrice(item.originalPrice)}
-                          </span>
-                          <span className="text-[#c45c26]">
-                            {formatPrice(item.price)} c/u
-                          </span>
-                        </p>
-                      ) : (
-                        <p className="text-sm text-[#8a7b6e]">
-                          {formatPrice(item.price)} c/u
-                        </p>
-                      )}
-                      <div className="mt-3 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateQuantity(item.id, item.quantity - 1)
-                            }
-                            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e4d5c5] text-[#4a3b30] transition hover:bg-[#f7f1ea]"
-                          >
-                            −
-                          </button>
-                          <span className="w-6 text-center text-[#4a3b30]">
-                            {item.quantity}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateQuantity(item.id, item.quantity + 1)
-                            }
-                            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e4d5c5] text-[#4a3b30] transition hover:bg-[#f7f1ea]"
-                          >
-                            +
-                          </button>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <p className="font-serif text-lg text-[#4a3b30]">
-                            {formatPrice(item.price * item.quantity)}
+                    {expanded && (
+                      <div className="mt-3 border-t border-[#efe4d8] pt-3">
+                        {item.originalPrice &&
+                        item.originalPrice > item.price ? (
+                          <p className="text-sm text-[#8a7b6e]">
+                            <span className="mr-1.5 line-through decoration-[#c45c26]/70">
+                              {formatPrice(item.originalPrice)}
+                            </span>
+                            <span className="text-[#c45c26]">
+                              {formatPrice(item.price)} c/u
+                            </span>
                           </p>
-                          <button
-                            type="button"
-                            onClick={() => removeItem(item.id)}
-                            className="text-sm text-[#a67c52] transition hover:text-[#4a3b30]"
-                          >
-                            Quitar
-                          </button>
+                        ) : (
+                          <p className="text-sm text-[#8a7b6e]">
+                            {formatPrice(item.price)} c/u
+                          </p>
+                        )}
+                        <div className="mt-3 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateQuantity(item.id, item.quantity - 1)
+                              }
+                              className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e4d5c5] text-[#4a3b30] transition hover:bg-[#f7f1ea]"
+                            >
+                              −
+                            </button>
+                            <span className="w-6 text-center text-[#4a3b30]">
+                              {item.quantity}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateQuantity(item.id, item.quantity + 1)
+                              }
+                              className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e4d5c5] text-[#4a3b30] transition hover:bg-[#f7f1ea]"
+                            >
+                              +
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <p className="font-serif text-lg text-[#4a3b30]">
+                              {formatPrice(item.price * item.quantity)}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => removeItem(item.id)}
+                              className="text-sm text-[#a67c52] transition hover:text-[#4a3b30]"
+                            >
+                              Quitar
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </li>
                 );
               })}
@@ -484,11 +480,11 @@ export function CartDrawer() {
                   value={areaCode}
                   onChange={(e) => setAreaCode(e.target.value)}
                   aria-label="Característica"
-                  className="w-[7.5rem] shrink-0 rounded-2xl border border-[#e4d5c5] bg-white px-2 py-2.5 text-sm text-[#4a3b30] outline-none focus:border-[#a67c52] sm:w-36"
+                  className="max-w-[55%] min-w-0 flex-1 rounded-2xl border border-[#e4d5c5] bg-white px-2 py-2.5 text-sm text-[#4a3b30] outline-none focus:border-[#a67c52] sm:max-w-[48%]"
                 >
                   {PHONE_AREA_CODES.map((area) => (
                     <option key={area.code} value={area.code}>
-                      {area.code}
+                      {area.label}
                     </option>
                   ))}
                 </select>
@@ -505,7 +501,7 @@ export function CartDrawer() {
                 />
               </div>
               <p className="mt-1 text-xs text-[#9a8b7e]">
-                Características + número, sin 0 ni 15.
+                Elegí ciudad / característica y el número, sin 0 ni 15.
               </p>
             </div>
 
