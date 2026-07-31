@@ -41,5 +41,5 @@ export function getBaseUrl() {
 
 /** Logo limpio para correos (CDN; evita cold start de Render). */
 export function getEmailLogoUrl() {
-  return "https://cdn.jsdelivr.net/gh/diazdiegok/Eternity@main/public/email-logo.png";
+  return "https://cdn.jsdelivr.net/gh/diazdiegok/Eternity@e592c6f961babc83271b6ff206285fc59fc9552a/public/email-logo.png";
 }
