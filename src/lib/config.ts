@@ -8,8 +8,11 @@ export const SITE = {
   whatsapp: "5493435001061",
   instagram: "https://www.instagram.com/eternity.recuerdos",
   currency: "ARS",
-  /** Aviso interno cuando llega un pedido web */
-  orderNotifyEmail: "eternityjoyasmaternas@gmail.com",
+  /** Avisos internos cuando llega un pedido web */
+  orderNotifyEmails: [
+    "eternityjoyasmaternas@gmail.com",
+    "vfontanetto@gmail.com",
+  ],
   transfer: {
     alias: "vale.fonta",
     cvu: "0000003100078490743361",

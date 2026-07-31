@@ -263,11 +263,18 @@ export async function sendOrderReceivedEmail(
   );
 }
 
+export function getOrderNotifyEmails() {
+  const fromEnv = process.env.ORDER_NOTIFY_EMAIL?.trim();
+  const list = fromEnv
+    ? fromEnv.split(/[,;]+/).map((e) => normalizeEmail(e)).filter(Boolean)
+    : SITE.orderNotifyEmails.map((e) => normalizeEmail(e));
+
+  return [...new Set(list.filter((e) => isValidEmail(e)))];
+}
+
+/** @deprecated Usá getOrderNotifyEmails */
 export function getOrderNotifyEmail() {
-  return (
-    process.env.ORDER_NOTIFY_EMAIL?.trim() ||
-    SITE.orderNotifyEmail
-  );
+  return getOrderNotifyEmails()[0] || SITE.orderNotifyEmails[0];
 }
 
 /** Aviso al negocio cuando entra un pedido por la web */
@@ -279,21 +286,18 @@ export async function sendNewOrderNotifyEmail(
     channel?: string | null;
   }
 ) {
-  const notifyTo = getOrderNotifyEmail();
-  if (!notifyTo || !isValidEmail(notifyTo)) {
+  const recipients = getOrderNotifyEmails().filter(
+    (email) =>
+      !order.customerEmail ||
+      normalizeEmail(order.customerEmail) !== email
+  );
+
+  if (!recipients.length) {
     return {
       ok: false as const,
       skipped: true,
-      error: "ORDER_NOTIFY_EMAIL inválido",
+      error: "Sin destinatarios de aviso",
     };
-  }
-
-  // No mandar duplicado si el cliente usó el mismo mail del negocio
-  if (
-    order.customerEmail &&
-    normalizeEmail(order.customerEmail) === normalizeEmail(notifyTo)
-  ) {
-    return { ok: true as const, skipped: false, provider: "same-as-customer" };
   }
 
   const channelLabel =
@@ -345,11 +349,22 @@ export async function sendNewOrderNotifyEmail(
     </p>
   `;
 
-  return sendMail(
-    notifyTo,
-    `Nuevo pedido ${order.code} — ${formatPrice(order.total)}`,
-    wrapEmail("Nuevo pedido web", body)
+  const subject = `Nuevo pedido ${order.code} — ${formatPrice(order.total)}`;
+  const html = wrapEmail("Nuevo pedido web", body);
+  const results = await Promise.all(
+    recipients.map((to) => sendMail(to, subject, html))
   );
+
+  const failed = results.filter((r) => !r.ok);
+  if (failed.length === results.length) {
+    return failed[0];
+  }
+
+  return {
+    ok: true as const,
+    skipped: false as const,
+    provider: results.find((r) => r.ok && !r.skipped)?.provider || "multi",
+  };
 }
 
 function thankYouClosing() {
