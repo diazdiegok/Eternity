@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { normalizeEmail, isValidEmail } from "@/lib/email";
 import { normalizeOrderStatus } from "@/lib/orders";
+import { isPersonalDelivery } from "@/lib/shipping";
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,9 +35,12 @@ export async function POST(request: NextRequest) {
     }
 
     const status = normalizeOrderStatus(order.status);
+    const personal = isPersonalDelivery(order.shippingCarrier);
     const statusLabel =
       status === "completed"
-        ? "En envío"
+        ? personal
+          ? "Entrega personal"
+          : "En envío"
         : status === "cancelled"
           ? "Cancelado"
           : "En curso";
@@ -49,6 +53,7 @@ export async function POST(request: NextRequest) {
       total: order.total,
       shippingCarrier: order.shippingCarrier,
       trackingCode: order.trackingCode,
+      personalDelivery: personal,
       items: order.items.map((item) => ({
         name: item.name,
         price: item.price,

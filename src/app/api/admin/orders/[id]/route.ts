@@ -4,8 +4,9 @@ import { db } from "@/lib/db";
 import {
   isValidEmail,
   normalizeEmail,
-  sendOrderShippedEmail,
+  sendOrderCompletedEmail,
 } from "@/lib/email";
+import { isPersonalDelivery } from "@/lib/shipping";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -76,17 +77,30 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     body.shippingCarrier !== undefined
       ? String(body.shippingCarrier || "").trim() || null
       : existing.shippingCarrier;
-  const trackingCode =
+  let trackingCode =
     body.trackingCode !== undefined
       ? String(body.trackingCode || "").trim() || null
       : existing.trackingCode;
 
+  if (isPersonalDelivery(shippingCarrier)) {
+    trackingCode = null;
+  }
+
   if (nextStatus === "completed") {
-    if (!shippingCarrier || !trackingCode) {
+    if (!shippingCarrier) {
       return NextResponse.json(
         {
           error:
-            "Para marcar Completado cargá empresa de envío y N° de seguimiento",
+            "Para marcar Completado elegí entrega personal o empresa de envío",
+        },
+        { status: 400 }
+      );
+    }
+    if (!isPersonalDelivery(shippingCarrier) && !trackingCode) {
+      return NextResponse.json(
+        {
+          error:
+            "Para envío cargá el N° de seguimiento (o elegí entrega personal)",
         },
         { status: 400 }
       );
@@ -137,7 +151,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           createdAt: new Date(String(body.createdAt)),
         }),
         ...(body.shippingCarrier !== undefined && { shippingCarrier }),
-        ...(body.trackingCode !== undefined && { trackingCode }),
+        ...((body.trackingCode !== undefined ||
+          isPersonalDelivery(shippingCarrier)) && { trackingCode }),
         ...(total !== undefined && { total }),
       },
       include: { items: true },
@@ -145,24 +160,23 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   });
 
   let emailSent = false;
-  if (
-    becomingCompleted &&
-    order.customerEmail &&
-    order.shippingCarrier &&
-    order.trackingCode
-  ) {
-    const mail = await sendOrderShippedEmail(order.customerEmail, {
-      code: order.code,
-      createdAt: order.createdAt,
-      total: order.total,
-      customerNote: order.customerNote,
-      couponCode: order.couponCode,
-      discountAmount: order.discountAmount,
-      items: order.items,
-      shippingCarrier: order.shippingCarrier,
-      trackingCode: order.trackingCode,
-    });
-    emailSent = mail.ok;
+  if (becomingCompleted && order.customerEmail && order.shippingCarrier) {
+    const personal = isPersonalDelivery(order.shippingCarrier);
+    if (personal || order.trackingCode) {
+      const mail = await sendOrderCompletedEmail(order.customerEmail, {
+        code: order.code,
+        createdAt: order.createdAt,
+        total: order.total,
+        customerNote: order.customerNote,
+        couponCode: order.couponCode,
+        discountAmount: order.discountAmount,
+        items: order.items,
+        shippingCarrier: order.shippingCarrier,
+        trackingCode: order.trackingCode,
+        personalDelivery: personal,
+      });
+      emailSent = mail.ok;
+    }
   }
 
   return NextResponse.json({ ...order, emailSent });

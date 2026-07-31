@@ -11,6 +11,7 @@ type LookupResult = {
   total: number;
   shippingCarrier: string | null;
   trackingCode: string | null;
+  personalDelivery?: boolean;
   items: { name: string; price: number; quantity: number }[];
 };
 
@@ -128,14 +129,27 @@ export function OrderLookupForm() {
           </p>
 
           {result.status === "completed" &&
-            (result.shippingCarrier || result.trackingCode) && (
+            (result.personalDelivery ||
+              result.shippingCarrier ||
+              result.trackingCode) && (
               <div className="mt-5 rounded-2xl bg-[#f7f1ea] px-4 py-3 text-sm text-[#5c4a3d]">
-                <p className="font-medium text-[#4a3b30]">Datos de envío</p>
-                {result.shippingCarrier && (
-                  <p className="mt-1">Empresa: {result.shippingCarrier}</p>
-                )}
-                {result.trackingCode && (
-                  <p className="mt-1">Seguimiento: {result.trackingCode}</p>
+                {result.personalDelivery ? (
+                  <>
+                    <p className="font-medium text-[#4a3b30]">Entrega personal</p>
+                    <p className="mt-1">
+                      El pedido está listo para entrega o retiro coordinado.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-medium text-[#4a3b30]">Datos de envío</p>
+                    {result.shippingCarrier && (
+                      <p className="mt-1">Empresa: {result.shippingCarrier}</p>
+                    )}
+                    {result.trackingCode && (
+                      <p className="mt-1">Seguimiento: {result.trackingCode}</p>
+                    )}
+                  </>
                 )}
               </div>
             )}

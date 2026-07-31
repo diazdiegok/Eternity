@@ -3,7 +3,11 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { formatPrice } from "@/lib/whatsapp";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { SHIPPING_CARRIERS } from "@/lib/shipping";
+import {
+  PERSONAL_DELIVERY,
+  SHIPPING_CARRIERS,
+  isPersonalDelivery,
+} from "@/lib/shipping";
 
 type Product = {
   id: string;
@@ -89,7 +93,7 @@ export function AdminOrders({ products }: { products: Product[] }) {
     customerNote: "",
     status: "completed",
     createdAt: "",
-    shippingCarrier: "Via Cargo",
+    shippingCarrier: PERSONAL_DELIVERY,
     trackingCode: "",
   });
   const [editItems, setEditItems] = useState<EditItem[]>([]);
@@ -97,6 +101,7 @@ export function AdminOrders({ products }: { products: Product[] }) {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [shipOrder, setShipOrder] = useState<Order | null>(null);
+  const [shipMode, setShipMode] = useState<"shipping" | "personal">("shipping");
   const [shipCarrier, setShipCarrier] = useState("Via Cargo");
   const [shipTracking, setShipTracking] = useState("");
   const [shipSaving, setShipSaving] = useState(false);
@@ -140,7 +145,13 @@ export function AdminOrders({ products }: { products: Product[] }) {
       const order = orders.find((o) => o.id === id);
       if (!order) return;
       setShipOrder(order);
-      setShipCarrier(order.shippingCarrier || "Via Cargo");
+      const personal = isPersonalDelivery(order.shippingCarrier);
+      setShipMode(personal ? "personal" : "shipping");
+      setShipCarrier(
+        personal
+          ? "Via Cargo"
+          : order.shippingCarrier || "Via Cargo"
+      );
       setShipTracking(order.trackingCode || "");
       setMessage("");
       return;
@@ -163,7 +174,9 @@ export function AdminOrders({ products }: { products: Product[] }) {
   async function confirmShip(e: FormEvent) {
     e.preventDefault();
     if (!shipOrder) return;
-    if (!shipCarrier.trim() || !shipTracking.trim()) {
+
+    const personal = shipMode === "personal";
+    if (!personal && (!shipCarrier.trim() || !shipTracking.trim())) {
       setMessage("Completá empresa y N° de seguimiento");
       return;
     }
@@ -175,8 +188,8 @@ export function AdminOrders({ products }: { products: Product[] }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         status: "completed",
-        shippingCarrier: shipCarrier.trim(),
-        trackingCode: shipTracking.trim(),
+        shippingCarrier: personal ? PERSONAL_DELIVERY : shipCarrier.trim(),
+        trackingCode: personal ? "" : shipTracking.trim(),
       }),
     });
     const json = await res.json().catch(() => ({}));
@@ -189,10 +202,11 @@ export function AdminOrders({ products }: { products: Product[] }) {
 
     setOrders((prev) => prev.map((o) => (o.id === json.id ? json : o)));
     setShipOrder(null);
+    const label = personal ? "entrega personal" : "en envío";
     setMessage(
       json.emailSent
-        ? `Pedido ${json.code} en envío. Correo de seguimiento enviado.`
-        : `Pedido ${json.code} en envío.${json.customerEmail ? " (No se pudo enviar el correo)" : " Sin correo del cliente."}`
+        ? `Pedido ${json.code}: ${label}. Correo enviado al cliente.`
+        : `Pedido ${json.code}: ${label}.${json.customerEmail ? " (No se pudo enviar el correo)" : " Sin correo del cliente."}`
     );
   }
 
@@ -205,7 +219,7 @@ export function AdminOrders({ products }: { products: Product[] }) {
       customerNote: order.customerNote || "",
       status: toOrderStatus(order.status),
       createdAt: toDatetimeLocalValue(order.createdAt),
-      shippingCarrier: order.shippingCarrier || "Via Cargo",
+      shippingCarrier: order.shippingCarrier || PERSONAL_DELIVERY,
       trackingCode: order.trackingCode || "",
     });
     setEditItems(
@@ -559,17 +573,23 @@ export function AdminOrders({ products }: { products: Product[] }) {
                         />
                       </label>
                       <label className="text-sm font-medium text-[#5c4a3d]">
-                        Empresa de envío
+                        Entrega
                         <select
                           value={editForm.shippingCarrier}
                           onChange={(e) =>
                             setEditForm({
                               ...editForm,
                               shippingCarrier: e.target.value,
+                              trackingCode: isPersonalDelivery(e.target.value)
+                                ? ""
+                                : editForm.trackingCode,
                             })
                           }
                           className={inputClass}
                         >
+                          <option value={PERSONAL_DELIVERY}>
+                            {PERSONAL_DELIVERY}
+                          </option>
                           {SHIPPING_CARRIERS.map((c) => (
                             <option key={c} value={c}>
                               {c}
@@ -577,20 +597,22 @@ export function AdminOrders({ products }: { products: Product[] }) {
                           ))}
                         </select>
                       </label>
-                      <label className="text-sm font-medium text-[#5c4a3d]">
-                        N° de seguimiento
-                        <input
-                          value={editForm.trackingCode}
-                          onChange={(e) =>
-                            setEditForm({
-                              ...editForm,
-                              trackingCode: e.target.value,
-                            })
-                          }
-                          className={inputClass}
-                          placeholder="Código de tracking"
-                        />
-                      </label>
+                      {!isPersonalDelivery(editForm.shippingCarrier) && (
+                        <label className="text-sm font-medium text-[#5c4a3d]">
+                          N° de seguimiento
+                          <input
+                            value={editForm.trackingCode}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                trackingCode: e.target.value,
+                              })
+                            }
+                            className={inputClass}
+                            placeholder="Código de tracking"
+                          />
+                        </label>
+                      )}
                     </div>
 
                     <div className="space-y-3">
@@ -824,37 +846,76 @@ export function AdminOrders({ products }: { products: Product[] }) {
             className="relative w-full max-w-md rounded-3xl border border-[#e4d5c5] bg-[#f7f1ea] p-6 shadow-2xl"
           >
             <h3 className="font-serif text-2xl text-[#4a3b30]">
-              Marcar en envío
+              Completar pedido
             </h3>
             <p className="mt-1 text-sm text-[#8a7b6e]">
-              Pedido {shipOrder.code}. Al completar se envía el correo con el
-              seguimiento{shipOrder.customerEmail ? ` a ${shipOrder.customerEmail}` : ""}.
+              Pedido {shipOrder.code}. Al completar se envía el correo al
+              cliente
+              {shipOrder.customerEmail ? ` (${shipOrder.customerEmail})` : ""}.
             </p>
-            <label className="mt-4 block text-sm font-medium text-[#5c4a3d]">
-              Empresa
-              <select
-                value={shipCarrier}
-                onChange={(e) => setShipCarrier(e.target.value)}
-                className={inputClass}
-                required
-              >
-                {SHIPPING_CARRIERS.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="mt-3 block text-sm font-medium text-[#5c4a3d]">
-              N° / código de seguimiento
-              <input
-                value={shipTracking}
-                onChange={(e) => setShipTracking(e.target.value)}
-                className={inputClass}
-                placeholder="Ej: 123456789"
-                required
-              />
-            </label>
+
+            <fieldset className="mt-4 space-y-2">
+              <legend className="text-sm font-medium text-[#5c4a3d]">
+                Tipo de entrega
+              </legend>
+              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-[#e4d5c5] bg-white px-3 py-2.5 text-sm text-[#4a3b30]">
+                <input
+                  type="radio"
+                  name="shipMode"
+                  checked={shipMode === "personal"}
+                  onChange={() => setShipMode("personal")}
+                />
+                Entrega personal / retiro
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-[#e4d5c5] bg-white px-3 py-2.5 text-sm text-[#4a3b30]">
+                <input
+                  type="radio"
+                  name="shipMode"
+                  checked={shipMode === "shipping"}
+                  onChange={() => setShipMode("shipping")}
+                />
+                Envío por empresa
+              </label>
+            </fieldset>
+
+            {shipMode === "shipping" && (
+              <>
+                <label className="mt-4 block text-sm font-medium text-[#5c4a3d]">
+                  Empresa
+                  <select
+                    value={shipCarrier}
+                    onChange={(e) => setShipCarrier(e.target.value)}
+                    className={inputClass}
+                    required
+                  >
+                    {SHIPPING_CARRIERS.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="mt-3 block text-sm font-medium text-[#5c4a3d]">
+                  N° / código de seguimiento
+                  <input
+                    value={shipTracking}
+                    onChange={(e) => setShipTracking(e.target.value)}
+                    className={inputClass}
+                    placeholder="Ej: 123456789"
+                    required
+                  />
+                </label>
+              </>
+            )}
+
+            {shipMode === "personal" && (
+              <p className="mt-4 rounded-xl bg-white/80 px-3 py-3 text-sm text-[#6d5c4d]">
+                No hace falta tracking. El cliente recibe un correo de
+                agradecimiento avisando que el pedido está listo para entrega
+                personal.
+              </p>
+            )}
+
             <div className="mt-5 flex flex-wrap justify-end gap-2">
               <button
                 type="button"

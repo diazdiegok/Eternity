@@ -240,27 +240,74 @@ export async function sendOrderReceivedEmail(
   );
 }
 
-export async function sendOrderShippedEmail(
+function thankYouClosing() {
+  return `
+    <p style="margin:24px 0 0;line-height:1.6;color:#6d5c4d;font-size:15px;">
+      Desde el corazón de <strong>${escapeHtml(SITE.emailBrand)}</strong>, queremos agradecerte
+      por confiar en nosotros para acompañar este momento tan especial. Cada pieza está hecha
+      con dedicación, cariño y respeto por tu historia.
+    </p>
+    <p style="margin:14px 0 0;line-height:1.6;color:#6d5c4d;font-size:15px;">
+      Gracias por elegirnos. Esperamos que tu recuerdo Eternity te acompañe siempre.
+    </p>
+    <p style="margin:18px 0 0;font-size:14px;color:#8a7b6e;font-style:italic;">
+      Con cariño,<br />El equipo de ${escapeHtml(SITE.emailBrand)}
+    </p>
+  `;
+}
+
+export async function sendOrderCompletedEmail(
   to: string,
   order: OrderMailBase & {
     shippingCarrier: string;
-    trackingCode: string;
+    trackingCode?: string | null;
+    personalDelivery?: boolean;
   }
 ) {
+  if (order.personalDelivery) {
+    const body = `
+      <p style="margin:16px 0;line-height:1.6;color:#6d5c4d;font-size:15px;">
+        ¡Qué alegría compartirte que tu pedido <strong>${escapeHtml(order.code)}</strong>
+        ya está <strong>listo para entrega personal</strong>!
+      </p>
+      <p style="margin:0 0 16px;line-height:1.6;color:#6d5c4d;font-size:15px;">
+        Coordinamos contigo el encuentro para que recibas tu pieza de forma cercana y especial.
+      </p>
+      <p style="margin:0 0 16px;font-size:14px;color:#6d5c4d;">Fecha del pedido: ${escapeHtml(formatDate(order.createdAt))}</p>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;color:#4a3b30;">
+        ${itemsHtml(order.items)}
+      </table>
+      <p style="margin:16px 0 0;font-size:18px;"><strong>Total: ${formatPrice(order.total)}</strong></p>
+      ${thankYouClosing()}
+    `;
+
+    return sendMail(
+      to,
+      `Tu pedido ${order.code} está listo — ${SITE.emailBrand}`,
+      wrapEmail("Listo para entrega personal", body)
+    );
+  }
+
+  const tracking = (order.trackingCode || "").trim();
   const body = `
-    <p style="margin:16px 0;line-height:1.5;color:#6d5c4d;">
+    <p style="margin:16px 0;line-height:1.6;color:#6d5c4d;font-size:15px;">
       ¡Buenas noticias! Tu pedido <strong>${escapeHtml(order.code)}</strong> ya se encuentra
-      <strong>en envío</strong>.
+      <strong>en camino</strong>.
     </p>
     <p style="margin:0;font-size:14px;color:#8a7b6e;">Empresa de envío</p>
     <p style="margin:4px 0 12px;font-size:18px;">${escapeHtml(order.shippingCarrier)}</p>
-    <p style="margin:0;font-size:14px;color:#8a7b6e;">N° / código de seguimiento</p>
-    <p style="margin:4px 0 16px;font-size:22px;letter-spacing:0.04em;">${escapeHtml(order.trackingCode)}</p>
+    ${
+      tracking
+        ? `<p style="margin:0;font-size:14px;color:#8a7b6e;">N° / código de seguimiento</p>
+           <p style="margin:4px 0 16px;font-size:22px;letter-spacing:0.04em;">${escapeHtml(tracking)}</p>`
+        : ""
+    }
     <p style="margin:0 0 16px;font-size:14px;color:#6d5c4d;">Fecha del pedido: ${escapeHtml(formatDate(order.createdAt))}</p>
     <table style="width:100%;border-collapse:collapse;font-size:14px;color:#4a3b30;">
       ${itemsHtml(order.items)}
     </table>
     <p style="margin:16px 0 0;font-size:18px;"><strong>Total: ${formatPrice(order.total)}</strong></p>
+    ${thankYouClosing()}
   `;
 
   return sendMail(
@@ -268,6 +315,17 @@ export async function sendOrderShippedEmail(
     `Tu pedido ${order.code} está en envío — ${SITE.emailBrand}`,
     wrapEmail("Pedido en envío", body)
   );
+}
+
+/** @deprecated Prefer sendOrderCompletedEmail */
+export async function sendOrderShippedEmail(
+  to: string,
+  order: OrderMailBase & {
+    shippingCarrier: string;
+    trackingCode: string;
+  }
+) {
+  return sendOrderCompletedEmail(to, order);
 }
 
 export function normalizeEmail(value: string) {
