@@ -15,22 +15,29 @@ export async function GET() {
   const week = daysAgo(6);
   const month = daysAgo(29);
 
-  const [products, orders, recent] = await Promise.all([
-    db.product.findMany(),
-    db.order.findMany({
-      where: { createdAt: { gte: month } },
-      include: { items: true },
-      orderBy: { createdAt: "asc" },
-    }),
-    db.order.findMany({
-      include: { items: true },
-      orderBy: { createdAt: "desc" },
-      take: 8,
-    }),
-  ]);
+  const [products, orders, recent, pendingOrders, pendingCount] =
+    await Promise.all([
+      db.product.findMany(),
+      db.order.findMany({
+        where: { createdAt: { gte: month } },
+        include: { items: true },
+        orderBy: { createdAt: "asc" },
+      }),
+      db.order.findMany({
+        include: { items: true },
+        orderBy: { createdAt: "desc" },
+        take: 6,
+      }),
+      db.order.findMany({
+        where: { status: "pending" },
+        include: { items: true },
+        orderBy: { createdAt: "desc" },
+        take: 4,
+      }),
+      db.order.count({ where: { status: "pending" } }),
+    ]);
 
   const counted = orders.filter((o) => COUNTED.includes(o.status));
-  const pending = await db.order.count({ where: { status: "pending" } });
 
   const revenueMonth = counted.reduce((s, o) => s + o.total, 0);
   const revenueWeek = counted
@@ -43,18 +50,37 @@ export async function GET() {
   const ordersMonth = counted.length;
   const ordersWeek = counted.filter((o) => o.createdAt >= week).length;
   const ordersToday = counted.filter((o) => o.createdAt >= today).length;
+  const avgTicket = ordersMonth > 0 ? Math.round(revenueMonth / ordersMonth) : 0;
 
-  const byChannel = {
-    whatsapp: counted.filter((o) => o.channel === "whatsapp").length,
-    mercadopago: counted.filter((o) => o.channel === "mercadopago").length,
-    manual: counted.filter((o) => o.channel === "manual").length,
-  };
+  const channelKeys = ["whatsapp", "mercadopago", "manual"] as const;
+  const byChannel = Object.fromEntries(
+    channelKeys.map((key) => {
+      const rows = counted.filter((o) => o.channel === key);
+      return [
+        key,
+        {
+          count: rows.length,
+          revenue: rows.reduce((s, o) => s + o.total, 0),
+        },
+      ];
+    })
+  ) as Record<
+    (typeof channelKeys)[number],
+    { count: number; revenue: number }
+  >;
 
-  const productSales = new Map<string, { name: string; qty: number; revenue: number }>();
+  const productSales = new Map<
+    string,
+    { name: string; qty: number; revenue: number }
+  >();
   for (const order of counted) {
     for (const item of order.items) {
       const key = item.productId || item.name;
-      const prev = productSales.get(key) || { name: item.name, qty: 0, revenue: 0 };
+      const prev = productSales.get(key) || {
+        name: item.name,
+        qty: 0,
+        revenue: 0,
+      };
       prev.qty += item.quantity;
       prev.revenue += item.price * item.quantity;
       productSales.set(key, prev);
@@ -62,14 +88,17 @@ export async function GET() {
   }
 
   const topProducts = [...productSales.values()]
-    .sort((a, b) => b.qty - a.qty)
+    .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 5);
 
-  const last7: { date: string; label: string; total: number; count: number }[] = [];
+  const last7: { date: string; label: string; total: number; count: number }[] =
+    [];
   for (let i = 6; i >= 0; i--) {
     const d = daysAgo(i);
     const next = new Date(d.getTime() + 24 * 60 * 60 * 1000);
-    const dayOrders = counted.filter((o) => o.createdAt >= d && o.createdAt < next);
+    const dayOrders = counted.filter(
+      (o) => o.createdAt >= d && o.createdAt < next
+    );
     last7.push({
       date: d.toISOString().slice(0, 10),
       label: d.toLocaleDateString("es-AR", {
@@ -97,11 +126,21 @@ export async function GET() {
       ordersToday,
       ordersWeek,
       ordersMonth,
-      pending,
+      avgTicket,
+      pending: pendingCount,
       byChannel,
     },
     last7,
     topProducts,
     recent,
+    pendingPreview: pendingOrders.map((o) => ({
+      id: o.id,
+      code: o.code,
+      channel: o.channel,
+      total: o.total,
+      createdAt: o.createdAt,
+      customerName: o.customerName,
+      items: o.items.map((i) => ({ name: i.name, quantity: i.quantity })),
+    })),
   });
 }
