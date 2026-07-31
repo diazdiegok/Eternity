@@ -10,6 +10,9 @@ type StoredOrder = {
   code?: string;
   items?: CartItem[];
   note?: string;
+  customerName?: string;
+  customerPhone?: string;
+  email?: string;
   coupon?: { code: string; percentOff: number; amount: number } | null;
 };
 
@@ -46,6 +49,9 @@ export function CheckoutSuccessClient() {
       discount: stored.coupon || null,
       orderCode: stored.code,
       paid: true,
+      customerName: stored.customerName,
+      customerPhone: stored.customerPhone,
+      customerEmail: stored.email,
     });
   }, [stored]);
 

@@ -205,15 +205,27 @@ async function sendMail(
 
 export async function sendOrderReceivedEmail(
   to: string,
-  order: OrderMailBase
+  order: OrderMailBase & { customerName?: string | null; customerPhone?: string | null }
 ) {
+  const greeting = order.customerName?.trim()
+    ? `Hola ${escapeHtml(order.customerName.trim())},`
+    : "Hola,";
+
   const body = `
+    <p style="margin:16px 0;line-height:1.6;color:#6d5c4d;font-size:15px;">
+      ${greeting}
+    </p>
     <p style="margin:16px 0;line-height:1.5;color:#6d5c4d;">
-      Recibimos tu pedido. Se encuentra <strong>en curso</strong>.
+      ¡Gracias por tu compra! Recibimos tu pedido y ya se encuentra <strong>en curso</strong>.
     </p>
     <p style="margin:0;font-size:14px;color:#8a7b6e;">N° de orden</p>
     <p style="margin:4px 0 16px;font-size:28px;letter-spacing:0.04em;">${escapeHtml(order.code)}</p>
     <p style="margin:0 0 16px;font-size:14px;color:#6d5c4d;">Fecha: ${escapeHtml(formatDate(order.createdAt))}</p>
+    ${
+      order.customerPhone
+        ? `<p style="margin:0 0 16px;font-size:14px;color:#6d5c4d;">Te vamos a contactar al <strong>${escapeHtml(order.customerPhone)}</strong> por WhatsApp para coordinar.</p>`
+        : ""
+    }
     <table style="width:100%;border-collapse:collapse;font-size:14px;color:#4a3b30;">
       ${itemsHtml(order.items)}
     </table>
@@ -230,6 +242,9 @@ export async function sendOrderReceivedEmail(
     }
     <p style="margin:20px 0 0;font-size:14px;color:#6d5c4d;">
       Podés consultar el estado en ${escapeHtml(getBaseUrl())}/mi-pedido con el N° de orden y este correo.
+    </p>
+    <p style="margin:18px 0 0;font-size:14px;color:#8a7b6e;font-style:italic;">
+      Con cariño,<br />El equipo de ${escapeHtml(SITE.emailBrand)}
     </p>
   `;
 

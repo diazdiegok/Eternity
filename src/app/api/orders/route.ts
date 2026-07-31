@@ -13,9 +13,25 @@ export async function POST(request: NextRequest) {
     const items = body.items as CartItem[];
     const channel = body.channel as "whatsapp" | "mercadopago";
     const email = normalizeEmail(String(body.email || ""));
+    const customerName = String(body.customerName || "").trim();
+    const customerPhone = String(body.customerPhone || "").trim();
 
     if (!items?.length || !["whatsapp", "mercadopago"].includes(channel)) {
       return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
+    }
+
+    if (!customerName || customerName.length < 3) {
+      return NextResponse.json(
+        { error: "Ingresá tu nombre y apellido" },
+        { status: 400 }
+      );
+    }
+
+    if (!customerPhone) {
+      return NextResponse.json(
+        { error: "Ingresá tu teléfono con la característica" },
+        { status: 400 }
+      );
     }
 
     if (!isValidEmail(email)) {
@@ -28,6 +44,8 @@ export async function POST(request: NextRequest) {
     const order = await createOrder({
       channel,
       items,
+      customerName,
+      customerPhone,
       customerEmail: email,
       customerNote: body.note ? String(body.note) : "",
       status: "pending",
@@ -44,6 +62,8 @@ export async function POST(request: NextRequest) {
       couponCode: order.couponCode,
       discountAmount: order.discountAmount,
       items: order.items,
+      customerName,
+      customerPhone,
     });
 
     return NextResponse.json({
@@ -51,6 +71,8 @@ export async function POST(request: NextRequest) {
       code: order.code,
       total: order.total,
       email,
+      customerName,
+      customerPhone,
       emailSent: mail.ok,
       emailSkipped: mail.skipped,
       emailError: mail.ok ? null : mail.error,

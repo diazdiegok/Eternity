@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { buildWhatsAppUrl, formatPrice } from "@/lib/whatsapp";
+import {
+  DEFAULT_AREA_CODE,
+  PHONE_AREA_CODES,
+  buildWhatsAppPhone,
+  formatDisplayPhone,
+  isValidLocalPhone,
+} from "@/lib/phone";
 import { useCart } from "@/context/CartContext";
 import { WhatsAppIcon } from "@/components/Icons";
 import { NoticeDialog } from "@/components/ConfirmDialog";
@@ -33,6 +40,9 @@ export function CartDrawer() {
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [email, setEmail] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [areaCode, setAreaCode] = useState(DEFAULT_AREA_CODE);
+  const [phoneLocal, setPhoneLocal] = useState("");
 
   useEffect(() => {
     fetch("/api/checkout/mercadopago")
@@ -59,6 +69,16 @@ export function CartDrawer() {
   }, [whatsappUrl, completedCode]);
 
   if (!isOpen) return null;
+
+  function resetCheckoutFields() {
+    setNote("");
+    setEmail("");
+    setCustomerName("");
+    setAreaCode(DEFAULT_AREA_CODE);
+    setPhoneLocal("");
+    setCouponInput("");
+    setCouponMsg("");
+  }
 
   function handleClose() {
     setCompletedCode(null);
@@ -91,15 +111,27 @@ export function CartDrawer() {
     }
   }
 
-  const orderPayload = {
-    items,
-    note,
-    email: email.trim(),
-    couponCode: coupon?.code || null,
-    discountPercent: coupon?.percentOff || 0,
-  };
+  function getCustomerPhoneDisplay() {
+    return formatDisplayPhone(areaCode, phoneLocal);
+  }
 
-  function requireEmail() {
+  function getCustomerPhoneWa() {
+    return buildWhatsAppPhone(areaCode, phoneLocal);
+  }
+
+  function validateCheckout() {
+    if (!customerName.trim() || customerName.trim().length < 3) {
+      setNotice("Ingresá tu nombre y apellido");
+      return false;
+    }
+    if (!isValidLocalPhone(phoneLocal)) {
+      setNotice("Ingresá un teléfono válido (sin 0 ni 15)");
+      return false;
+    }
+    if (!getCustomerPhoneWa()) {
+      setNotice("Seleccioná la característica e ingresá el número");
+      return false;
+    }
     const value = email.trim();
     if (!value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
       setNotice("Ingresá un correo válido para enviarte el pedido");
@@ -108,14 +140,24 @@ export function CartDrawer() {
     return true;
   }
 
+  const orderPayload = () => ({
+    items,
+    note,
+    email: email.trim(),
+    customerName: customerName.trim(),
+    customerPhone: getCustomerPhoneDisplay(),
+    couponCode: coupon?.code || null,
+    discountPercent: coupon?.percentOff || 0,
+  });
+
   async function handleMercadoPago() {
-    if (!requireEmail()) return;
+    if (!validateCheckout()) return;
     setLoadingMp(true);
     try {
       const res = await fetch("/api/checkout/mercadopago", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderPayload),
+        body: JSON.stringify(orderPayload()),
       });
       const data = await res.json();
       if (data.checkoutUrl) {
@@ -126,6 +168,9 @@ export function CartDrawer() {
               code: data.orderCode,
               items,
               note,
+              customerName: customerName.trim(),
+              customerPhone: getCustomerPhoneDisplay(),
+              email: email.trim(),
               coupon: coupon
                 ? {
                     code: coupon.code,
@@ -139,7 +184,7 @@ export function CartDrawer() {
           /* ignore */
         }
         clearCart();
-        setEmail("");
+        resetCheckoutFields();
         window.location.href = data.checkoutUrl;
         return;
       }
@@ -151,13 +196,16 @@ export function CartDrawer() {
     }
   }
 
-  async function handleWhatsApp() {
+  async function handleConfirmOrder() {
     if (submitting || items.length === 0) return;
-    if (!requireEmail()) return;
+    if (!validateCheckout()) return;
     setSubmitting(true);
 
     const cartSnapshot = [...items];
     const noteSnapshot = note;
+    const nameSnapshot = customerName.trim();
+    const phoneDisplay = getCustomerPhoneDisplay();
+    const emailSnapshot = email.trim();
     const couponSnapshot = coupon
       ? {
           code: coupon.code,
@@ -176,7 +224,7 @@ export function CartDrawer() {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...orderPayload, channel: "whatsapp" }),
+        body: JSON.stringify({ ...orderPayload(), channel: "whatsapp" }),
         signal: controller.signal,
       });
       window.clearTimeout(timeout);
@@ -207,14 +255,14 @@ export function CartDrawer() {
       discount: couponSnapshot,
       orderCode,
       paid: false,
+      customerName: nameSnapshot,
+      customerPhone: phoneDisplay,
+      customerEmail: emailSnapshot,
     });
 
     clearCart();
     clearCoupon();
-    setNote("");
-    setEmail("");
-    setCouponInput("");
-    setCouponMsg("");
+    resetCheckoutFields();
     setEmailSent(sent);
     setWhatsappUrl(url);
     setCompletedCode(orderCode || "registrado");
@@ -239,7 +287,7 @@ export function CartDrawer() {
             </h2>
             <p className="text-xs text-[#8a7b6e]">
               {showSuccess
-                ? "Adjuntá el comprobante por WhatsApp"
+                ? "Te enviamos el correo y avisamos al negocio"
                 : items.length === 0
                   ? "Vacío"
                   : `${items.reduce((n, i) => n + i.quantity, 0)} ítem(s)`}
@@ -270,7 +318,7 @@ export function CartDrawer() {
                   </p>
                 ) : (
                   <p className="mt-3 text-sm text-[#6d5c4d]">
-                    Pedido guardado. Te llevamos a WhatsApp para confirmarlo.
+                    Pedido guardado. Te llevamos a WhatsApp del negocio.
                   </p>
                 )}
                 {completedCode && completedCode !== "registrado" && (
@@ -280,8 +328,8 @@ export function CartDrawer() {
                 )}
                 <p className="mt-4 text-sm text-[#8a7b6e]">
                   {emailSent
-                    ? "Te enviamos el detalle al correo. En WhatsApp avisá el pedido y adjuntá el comprobante de pago."
-                    : "Pedido guardado. En WhatsApp avisá el pedido y adjuntá el comprobante de pago."}
+                    ? "Te enviamos el detalle al correo. También se abre WhatsApp al negocio para avisar el pedido; recordá adjuntar el comprobante."
+                    : "Pedido guardado. Se abre WhatsApp al negocio para avisar; recordá adjuntar el comprobante."}
                 </p>
               </div>
               <div className="flex w-full flex-col gap-2">
@@ -294,7 +342,7 @@ export function CartDrawer() {
                     className="btn-press flex w-full items-center justify-center gap-2 rounded-full bg-[#4a3b30] px-6 py-3 text-sm font-medium text-white"
                   >
                     <WhatsAppIcon className="h-5 w-5" />
-                    Avisar pedido por WhatsApp
+                    Abrir WhatsApp del negocio
                   </button>
                 )}
                 <button
@@ -350,7 +398,9 @@ export function CartDrawer() {
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        onClick={() =>
+                          updateQuantity(item.id, item.quantity - 1)
+                        }
                         className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e4d5c5] text-[#4a3b30] transition hover:bg-[#f7f1ea]"
                       >
                         −
@@ -360,7 +410,9 @@ export function CartDrawer() {
                       </span>
                       <button
                         type="button"
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        onClick={() =>
+                          updateQuantity(item.id, item.quantity + 1)
+                        }
                         className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e4d5c5] text-[#4a3b30] transition hover:bg-[#f7f1ea]"
                       >
                         +
@@ -380,6 +432,54 @@ export function CartDrawer() {
           <div className="space-y-4 border-t border-[#e4d5c5] bg-white/50 p-5 backdrop-blur-sm">
             <div>
               <label className="text-xs font-medium uppercase tracking-[0.14em] text-[#8a7b6e]">
+                Nombre y apellido *
+              </label>
+              <input
+                type="text"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Como figurás en el pedido"
+                autoComplete="name"
+                className="mt-1.5 w-full rounded-2xl border border-[#e4d5c5] bg-white px-3 py-2.5 text-sm text-[#4a3b30] outline-none transition focus:border-[#a67c52] focus:ring-2 focus:ring-[#a67c52]/20"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium uppercase tracking-[0.14em] text-[#8a7b6e]">
+                Teléfono / WhatsApp *
+              </label>
+              <div className="mt-1.5 flex gap-2">
+                <select
+                  value={areaCode}
+                  onChange={(e) => setAreaCode(e.target.value)}
+                  aria-label="Característica"
+                  className="w-[42%] rounded-2xl border border-[#e4d5c5] bg-white px-2 py-2.5 text-sm text-[#4a3b30] outline-none focus:border-[#a67c52] sm:w-[38%]"
+                >
+                  {PHONE_AREA_CODES.map((area) => (
+                    <option key={area.code} value={area.code}>
+                      {area.label}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={phoneLocal}
+                  onChange={(e) =>
+                    setPhoneLocal(e.target.value.replace(/[^\d\s-]/g, ""))
+                  }
+                  placeholder="Número (sin 0 ni 15)"
+                  autoComplete="tel-national"
+                  className="min-w-0 flex-1 rounded-2xl border border-[#e4d5c5] bg-white px-3 py-2.5 text-sm text-[#4a3b30] outline-none transition focus:border-[#a67c52] focus:ring-2 focus:ring-[#a67c52]/20"
+                />
+              </div>
+              <p className="mt-1 text-xs text-[#9a8b7e]">
+                Elegí la característica y el número. Te contactamos por WhatsApp.
+              </p>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium uppercase tracking-[0.14em] text-[#8a7b6e]">
                 Correo electrónico *
               </label>
               <input
@@ -391,8 +491,7 @@ export function CartDrawer() {
                 className="mt-1.5 w-full rounded-2xl border border-[#e4d5c5] bg-white px-3 py-2.5 text-sm text-[#4a3b30] outline-none transition focus:border-[#a67c52] focus:ring-2 focus:ring-[#a67c52]/20"
               />
               <p className="mt-1 text-xs text-[#9a8b7e]">
-                Te mandamos el N° de orden y el detalle. Después podés consultarlo
-                en Consultar mi pedido.
+                Te mandamos el N° de orden y el detalle por correo.
               </p>
             </div>
 
@@ -428,7 +527,9 @@ export function CartDrawer() {
                 <div className="flex gap-2">
                   <input
                     value={couponInput}
-                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    onChange={(e) =>
+                      setCouponInput(e.target.value.toUpperCase())
+                    }
                     placeholder="Código"
                     className="min-w-0 flex-1 rounded-2xl border border-[#e4d5c5] bg-white px-3 py-2.5 text-sm text-[#4a3b30] outline-none focus:border-[#a67c52]"
                   />
@@ -483,7 +584,7 @@ export function CartDrawer() {
 
             <button
               type="button"
-              onClick={handleWhatsApp}
+              onClick={handleConfirmOrder}
               disabled={submitting || loadingMp}
               className={`btn-press flex w-full items-center justify-center gap-2 rounded-full py-3.5 font-medium disabled:opacity-60 ${
                 mpEnabled
@@ -491,20 +592,19 @@ export function CartDrawer() {
                   : "bg-[#4a3b30] text-[#f7f1ea] shadow-[0_12px_28px_-14px_rgba(74,59,48,0.8)] hover:bg-[#5c4a3d]"
               }`}
             >
-              <WhatsAppIcon className="h-5 w-5" />
               {submitting
                 ? "Registrando..."
                 : mpEnabled
-                  ? "Pagué por transferencia (WhatsApp)"
-                  : "Finalizar pedido por WhatsApp"}
+                  ? "Confirmar pedido (transferencia)"
+                  : "Confirmar pedido"}
             </button>
 
-            {mpEnabled && (
-              <p className="text-center text-xs text-[#8a7b6e]">
-                Con transferencia: registramos el pedido y te pedimos adjuntar el
-                comprobante por WhatsApp.
-              </p>
-            )}
+            <p className="text-center text-xs text-[#8a7b6e]">
+              Al confirmar: correo al cliente + WhatsApp al negocio con tus datos.
+              {mpEnabled
+                ? " Si pagás por transferencia, adjuntá el comprobante."
+                : " Adjuntá el comprobante de pago por WhatsApp."}
+            </p>
 
             <button
               type="button"

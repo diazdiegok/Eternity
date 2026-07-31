@@ -16,9 +16,27 @@ export async function POST(request: NextRequest) {
   const items = body.items as CartItem[];
   const note = body.note ? String(body.note) : "";
   const email = body.email ? String(body.email).trim().toLowerCase() : "";
+  const customerName = body.customerName ? String(body.customerName).trim() : "";
+  const customerPhone = body.customerPhone
+    ? String(body.customerPhone).trim()
+    : "";
 
   if (!items?.length) {
     return NextResponse.json({ error: "El carrito está vacío" }, { status: 400 });
+  }
+
+  if (!customerName || customerName.length < 3) {
+    return NextResponse.json(
+      { error: "Ingresá tu nombre y apellido" },
+      { status: 400 }
+    );
+  }
+
+  if (!customerPhone) {
+    return NextResponse.json(
+      { error: "Ingresá tu teléfono con la característica" },
+      { status: 400 }
+    );
   }
 
   if (!email || !email.includes("@")) {
@@ -34,6 +52,8 @@ export async function POST(request: NextRequest) {
       channel: "mercadopago",
       items,
       customerNote: note,
+      customerName,
+      customerPhone,
       customerEmail: email,
       status: "pending",
       couponCode: body.couponCode ? String(body.couponCode) : null,
@@ -50,6 +70,8 @@ export async function POST(request: NextRequest) {
         couponCode: order.couponCode,
         discountAmount: order.discountAmount,
         items: order.items,
+        customerName,
+        customerPhone,
       });
     } catch (mailError) {
       console.error("MP order email error:", mailError);

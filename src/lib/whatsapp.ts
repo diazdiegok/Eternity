@@ -23,10 +23,22 @@ type WhatsAppOrderOptions = {
   orderCode?: string | null;
   /** Pedido registrado (transferencia/comprobante) vs ya pagado con MP */
   paid?: boolean;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  customerEmail?: string | null;
 };
 
 export function buildWhatsAppUrl(options: WhatsAppOrderOptions) {
-  const { items, note, discount, orderCode, paid = false } = options;
+  const {
+    items,
+    note,
+    discount,
+    orderCode,
+    paid = false,
+    customerName,
+    customerPhone,
+    customerEmail,
+  } = options;
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const total = discount ? Math.max(0, subtotal - discount.amount) : subtotal;
   const brand = SITE.emailBrand;
@@ -34,19 +46,21 @@ export function buildWhatsAppUrl(options: WhatsAppOrderOptions) {
   const lines: string[] = [];
 
   if (paid) {
-    lines.push(
-      `Hola! Acabo de *pagar* un pedido en *${brand}*.`,
-      ""
-    );
+    lines.push(`Hola! Acabo de *pagar* un pedido en *${brand}*.`, "");
   } else {
-    lines.push(
-      `Hola! Realicé un *pedido* en *${brand}*.`,
-      ""
-    );
+    lines.push(`Hola! Realicé un *pedido* en *${brand}*.`, "");
   }
 
   if (orderCode) {
     lines.push(`N° de pedido: *${orderCode}*`, "");
+  }
+
+  if (customerName?.trim() || customerPhone?.trim() || customerEmail?.trim()) {
+    lines.push("*Datos del cliente*");
+    if (customerName?.trim()) lines.push(`Nombre: ${customerName.trim()}`);
+    if (customerPhone?.trim()) lines.push(`Teléfono: ${customerPhone.trim()}`);
+    if (customerEmail?.trim()) lines.push(`Correo: ${customerEmail.trim()}`);
+    lines.push("");
   }
 
   lines.push(
