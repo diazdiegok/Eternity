@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { SITE, getBaseUrl } from "@/lib/config";
+import { SITE, getBaseUrl, getEmailLogoUrl } from "@/lib/config";
 import { formatPrice } from "@/lib/whatsapp";
 
 type OrderMailItem = {
@@ -52,7 +52,7 @@ function escapeHtml(s: string) {
 
 function wrapEmail(title: string, body: string) {
   const brand = SITE.emailBrand;
-  const logoUrl = `${getBaseUrl()}/logo.png`;
+  const logoUrl = getEmailLogoUrl();
 
   return `<!DOCTYPE html>
 <html lang="es">

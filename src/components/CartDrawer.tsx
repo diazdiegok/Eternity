@@ -287,7 +287,7 @@ export function CartDrawer() {
             </h2>
             <p className="text-xs text-[#8a7b6e]">
               {showSuccess
-                ? "Te enviamos el correo y avisamos al negocio"
+                ? "Correo enviado · aviso al negocio"
                 : items.length === 0
                   ? "Vacío"
                   : `${items.reduce((n, i) => n + i.quantity, 0)} ítem(s)`}
@@ -328,8 +328,8 @@ export function CartDrawer() {
                 )}
                 <p className="mt-4 text-sm text-[#8a7b6e]">
                   {emailSent
-                    ? "Te enviamos el detalle al correo. También se abre WhatsApp al negocio para avisar el pedido; recordá adjuntar el comprobante."
-                    : "Pedido guardado. Se abre WhatsApp al negocio para avisar; recordá adjuntar el comprobante."}
+                    ? "Te enviamos el detalle al correo. Se abre WhatsApp para avisar al negocio."
+                    : "Pedido guardado. Se abre WhatsApp para avisar al negocio."}
                 </p>
               </div>
               <div className="flex w-full flex-col gap-2">
@@ -569,39 +569,35 @@ export function CartDrawer() {
               </div>
             </div>
 
-            {mpEnabled && (
-              <button
-                type="button"
-                onClick={handleMercadoPago}
-                disabled={loadingMp || submitting}
-                className="btn-press w-full rounded-full bg-[#009ee3] py-3.5 font-medium text-white shadow-[0_12px_28px_-14px_rgba(0,158,227,0.7)] transition hover:bg-[#008bd0] disabled:opacity-60"
-              >
-                {loadingMp ? "Redirigiendo..." : "Pagar con Mercado Pago"}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                if (!mpEnabled) {
+                  setNotice(
+                    "Mercado Pago aún no está activo. En Render agregá MP_ACCESS_TOKEN (Access Token de tu app Checkout Pro) y NEXT_PUBLIC_BASE_URL=https://eternity-i5n2.onrender.com, después redeploy."
+                  );
+                  return;
+                }
+                handleMercadoPago();
+              }}
+              disabled={loadingMp || submitting}
+              className="btn-press w-full rounded-full bg-[#009ee3] py-3.5 font-medium text-white shadow-[0_12px_28px_-14px_rgba(0,158,227,0.7)] transition hover:bg-[#008bd0] disabled:opacity-60"
+            >
+              {loadingMp ? "Redirigiendo..." : "Pagar con Mercado Pago"}
+            </button>
 
             <button
               type="button"
               onClick={handleConfirmOrder}
               disabled={submitting || loadingMp}
-              className={`btn-press flex w-full items-center justify-center gap-2 rounded-full py-3.5 font-medium disabled:opacity-60 ${
-                mpEnabled
-                  ? "border border-[#e4d5c5] bg-white text-[#4a3b30] hover:bg-[#faf6f1]"
-                  : "bg-[#4a3b30] text-[#f7f1ea] shadow-[0_12px_28px_-14px_rgba(74,59,48,0.8)] hover:bg-[#5c4a3d]"
-              }`}
+              className="btn-press w-full rounded-full border border-[#e4d5c5] bg-white py-3.5 font-medium text-[#4a3b30] hover:bg-[#faf6f1] disabled:opacity-60"
             >
-              {submitting
-                ? "Registrando..."
-                : mpEnabled
-                  ? "Confirmar pedido (transferencia)"
-                  : "Confirmar pedido"}
+              {submitting ? "Registrando..." : "Confirmar pedido"}
             </button>
 
             <p className="text-center text-xs text-[#8a7b6e]">
-              Al confirmar: correo al cliente + WhatsApp al negocio con tus datos.
-              {mpEnabled
-                ? " Si pagás por transferencia, adjuntá el comprobante."
-                : " Adjuntá el comprobante de pago por WhatsApp."}
+              Con Mercado Pago pagás online. Al confirmar sin MP: correo + WhatsApp
+              al negocio.
             </p>
 
             <button

@@ -3,13 +3,18 @@ import { getBaseUrl } from "./config";
 import type { CartItem } from "./whatsapp";
 
 function getClient() {
-  const token = process.env.MP_ACCESS_TOKEN?.trim();
+  const token =
+    process.env.MP_ACCESS_TOKEN?.trim() ||
+    process.env.MERCADOPAGO_ACCESS_TOKEN?.trim();
   if (!token) return null;
   return new MercadoPagoConfig({ accessToken: token });
 }
 
 export function isMercadoPagoEnabled() {
-  return Boolean(process.env.MP_ACCESS_TOKEN?.trim());
+  return Boolean(
+    process.env.MP_ACCESS_TOKEN?.trim() ||
+      process.env.MERCADOPAGO_ACCESS_TOKEN?.trim()
+  );
 }
 
 export async function createCheckoutPreference(

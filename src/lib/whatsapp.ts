@@ -94,8 +94,7 @@ export function buildWhatsAppUrl(options: WhatsAppOrderOptions) {
   } else {
     lines.push(
       "",
-      "📎 *Importante:* voy a adjuntar / adjunto el *comprobante de pago*.",
-      "Por favor confirmen cuando lo reciban. ¡Gracias!"
+      "Quedo a la espera de la confirmación. ¡Gracias!"
     );
   }
 

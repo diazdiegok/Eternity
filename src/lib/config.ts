@@ -10,12 +10,26 @@ export const SITE = {
   currency: "ARS",
 } as const;
 
+/** URL pública de producción (fallback si falta env en Render) */
+export const PRODUCTION_BASE_URL = "https://eternity-i5n2.onrender.com";
+
 export function getBaseUrl() {
-  if (process.env.NEXT_PUBLIC_BASE_URL) {
-    return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, "");
-  }
+  const fromEnv = (
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.RENDER_EXTERNAL_URL ||
+    ""
+  ).trim();
+  if (fromEnv) return fromEnv.replace(/\/$/, "");
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
+  if (process.env.NODE_ENV === "production") {
+    return PRODUCTION_BASE_URL;
+  }
   return "http://localhost:3000";
+}
+
+/** URL absoluta del logo para correos (PNG: mejor soporte en clientes de mail) */
+export function getEmailLogoUrl() {
+  return `${getBaseUrl()}/logo.png`;
 }
