@@ -34,7 +34,10 @@ export function getBaseUrl() {
   return "http://localhost:3000";
 }
 
-/** URL absoluta del logo para correos (PNG: mejor soporte en clientes de mail) */
+/** URL absoluta del logo para correos.
+ * No usar el dominio de Render Free: se duerme y el logo sale roto en Gmail.
+ * jsDelivr sirve el archivo del repo sin cold start.
+ */
 export function getEmailLogoUrl() {
-  return `${getBaseUrl()}/logo.png`;
+  return "https://cdn.jsdelivr.net/gh/diazdiegok/Eternity@main/public/logo.png";
 }

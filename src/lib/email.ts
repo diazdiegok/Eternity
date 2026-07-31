@@ -56,19 +56,27 @@ function wrapEmail(title: string, body: string) {
 
   return `<!DOCTYPE html>
 <html lang="es">
-<head><meta charset="utf-8" /><title>${escapeHtml(title)}</title></head>
-<body style="margin:0;padding:0;background:#f7f1ea;font-family:Georgia,serif;color:#4a3b30;">
-  <div style="max-width:560px;margin:24px auto;padding:28px;background:#fff;border-radius:20px;border:1px solid #e4d5c5;">
-    <div style="text-align:center;margin:0 0 20px;">
-      <img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(brand)}" width="96" height="96" style="display:inline-block;width:96px;height:96px;border-radius:50%;object-fit:cover;border:1px solid #e4d5c5;" />
-      <p style="margin:12px 0 0;font-size:13px;letter-spacing:0.18em;text-transform:uppercase;color:#a67c52;">${escapeHtml(brand)}</p>
-    </div>
-    <h1 style="margin:12px 0 0;font-size:26px;font-weight:normal;text-align:center;">${escapeHtml(title)}</h1>
-    ${body}
-    <p style="margin:28px 0 0;font-size:12px;color:#8a7b6e;text-align:center;">
-      ${escapeHtml(brand)} · Joyas de leche materna
-    </p>
-  </div>
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>${escapeHtml(title)}</title></head>
+<body style="margin:0;padding:0;background:#f7f1ea;font-family:Georgia,'Times New Roman',serif;color:#4a3b30;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f1ea;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border:1px solid #e4d5c5;border-radius:20px;">
+          <tr>
+            <td style="padding:28px;text-align:center;">
+              <img src="${escapeHtml(logoUrl)}" alt="Eternity" width="96" height="96" style="display:block;margin:0 auto;width:96px;height:96px;border:0;border-radius:50%;object-fit:cover;" />
+              <p style="margin:12px 0 0;font-size:13px;letter-spacing:0.18em;text-transform:uppercase;color:#a67c52;">${escapeHtml(brand)}</p>
+              <h1 style="margin:16px 0 0;font-size:26px;font-weight:normal;color:#4a3b30;">${escapeHtml(title)}</h1>
+              <div style="text-align:left;margin-top:8px;">${body}</div>
+              <p style="margin:28px 0 0;font-size:12px;color:#8a7b6e;text-align:center;">
+                ${escapeHtml(brand)} · Joyas de leche materna
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
 }
