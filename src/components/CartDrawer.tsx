@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { buildWhatsAppUrl, formatPrice } from "@/lib/whatsapp";
 import {
+  DEFAULT_AREA_CODE,
+  PHONE_AREA_CODES,
   buildWhatsAppPhone,
   formatDisplayPhone,
   isValidAreaCode,
@@ -40,8 +42,9 @@ export function CartDrawer() {
   const [notice, setNotice] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [customerName, setCustomerName] = useState("");
-  const [areaCode, setAreaCode] = useState("");
+  const [areaCode, setAreaCode] = useState(DEFAULT_AREA_CODE);
   const [phoneLocal, setPhoneLocal] = useState("");
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/checkout/mercadopago")
@@ -73,8 +76,9 @@ export function CartDrawer() {
     setNote("");
     setEmail("");
     setCustomerName("");
-    setAreaCode("");
+    setAreaCode(DEFAULT_AREA_CODE);
     setPhoneLocal("");
+    setExpandedItemId(null);
     setCouponInput("");
     setCouponMsg("");
   }
@@ -267,6 +271,8 @@ export function CartDrawer() {
     setCompletedCode(orderCode || "registrado");
   }
 
+  const itemCount = items.reduce((n, i) => n + i.quantity, 0);
+
   const showSuccess = Boolean(completedCode) && items.length === 0;
 
   return (
@@ -289,7 +295,7 @@ export function CartDrawer() {
                 ? "Correo enviado · aviso al negocio"
                 : items.length === 0
                   ? "Vacío"
-                  : `${items.reduce((n, i) => n + i.quantity, 0)} ítem(s)`}
+                  : `${itemCount} ${itemCount === 1 ? "producto" : "productos"}`}
             </p>
           </div>
           <button
@@ -361,22 +367,47 @@ export function CartDrawer() {
               </p>
             </div>
           ) : (
-            <ul className="space-y-3">
-              {items.map((item) => (
-                <li
-                  key={item.id}
-                  className="rounded-2xl border border-[#e4d5c5] bg-white p-4 shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-medium text-[#4a3b30]">{item.name}</p>
+            <ul className="space-y-2">
+              {items.map((item) => {
+                const expanded = expandedItemId === item.id;
+                return (
+                  <li
+                    key={item.id}
+                    className="group rounded-2xl border border-[#e4d5c5] bg-white px-3.5 py-3 shadow-sm"
+                    onMouseEnter={() => setExpandedItemId(item.id)}
+                    onMouseLeave={() => setExpandedItemId(null)}
+                  >
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between gap-3 text-left"
+                      onClick={() =>
+                        setExpandedItemId((id) =>
+                          id === item.id ? null : item.id
+                        )
+                      }
+                    >
+                      <p className="truncate font-medium text-[#4a3b30]">
+                        {item.name}
+                      </p>
+                      <span className="shrink-0 text-xs text-[#a67c52] sm:hidden">
+                        {expanded ? "−" : "+"}
+                      </span>
+                    </button>
+
+                    <div
+                      className={`overflow-hidden transition-all ${
+                        expanded
+                          ? "mt-3 max-h-40 border-t border-[#efe4d8] pt-3 opacity-100"
+                          : "max-h-0 opacity-0 group-hover:mt-3 group-hover:max-h-40 group-hover:border-t group-hover:border-[#efe4d8] group-hover:pt-3 group-hover:opacity-100"
+                      }`}
+                    >
                       {item.originalPrice && item.originalPrice > item.price ? (
                         <p className="text-sm text-[#8a7b6e]">
                           <span className="mr-1.5 line-through decoration-[#c45c26]/70">
                             {formatPrice(item.originalPrice)}
                           </span>
                           <span className="text-[#c45c26]">
-                            {formatPrice(item.price)} c/u · 🔥 HOT
+                            {formatPrice(item.price)} c/u
                           </span>
                         </p>
                       ) : (
@@ -384,45 +415,47 @@ export function CartDrawer() {
                           {formatPrice(item.price)} c/u
                         </p>
                       )}
+                      <div className="mt-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateQuantity(item.id, item.quantity - 1)
+                            }
+                            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e4d5c5] text-[#4a3b30] transition hover:bg-[#f7f1ea]"
+                          >
+                            −
+                          </button>
+                          <span className="w-6 text-center text-[#4a3b30]">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateQuantity(item.id, item.quantity + 1)
+                            }
+                            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e4d5c5] text-[#4a3b30] transition hover:bg-[#f7f1ea]"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <p className="font-serif text-lg text-[#4a3b30]">
+                            {formatPrice(item.price * item.quantity)}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => removeItem(item.id)}
+                            className="text-sm text-[#a67c52] transition hover:text-[#4a3b30]"
+                          >
+                            Quitar
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeItem(item.id)}
-                      className="text-sm text-[#a67c52] transition hover:text-[#4a3b30]"
-                    >
-                      Quitar
-                    </button>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          updateQuantity(item.id, item.quantity - 1)
-                        }
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e4d5c5] text-[#4a3b30] transition hover:bg-[#f7f1ea]"
-                      >
-                        −
-                      </button>
-                      <span className="w-6 text-center text-[#4a3b30]">
-                        {item.quantity}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          updateQuantity(item.id, item.quantity + 1)
-                        }
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e4d5c5] text-[#4a3b30] transition hover:bg-[#f7f1ea]"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <p className="font-serif text-lg text-[#4a3b30]">
-                      {formatPrice(item.price * item.quantity)}
-                    </p>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -446,18 +479,19 @@ export function CartDrawer() {
               <label className="text-xs font-medium uppercase tracking-[0.14em] text-[#8a7b6e]">
                 Teléfono / WhatsApp *
               </label>
-              <div className="mt-1.5 grid grid-cols-[5.5rem_1fr] gap-2">
-                <input
-                  type="tel"
-                  inputMode="numeric"
+              <div className="mt-1.5 flex gap-2">
+                <select
                   value={areaCode}
-                  onChange={(e) =>
-                    setAreaCode(e.target.value.replace(/\D/g, "").slice(0, 4))
-                  }
-                  placeholder="Caract."
+                  onChange={(e) => setAreaCode(e.target.value)}
                   aria-label="Característica"
-                  className="rounded-2xl border border-[#e4d5c5] bg-white px-2 py-2.5 text-center text-sm text-[#4a3b30] outline-none transition focus:border-[#a67c52] focus:ring-2 focus:ring-[#a67c52]/20"
-                />
+                  className="w-[7.5rem] shrink-0 rounded-2xl border border-[#e4d5c5] bg-white px-2 py-2.5 text-sm text-[#4a3b30] outline-none focus:border-[#a67c52] sm:w-36"
+                >
+                  {PHONE_AREA_CODES.map((area) => (
+                    <option key={area.code} value={area.code}>
+                      {area.code}
+                    </option>
+                  ))}
+                </select>
                 <input
                   type="tel"
                   inputMode="numeric"
@@ -467,11 +501,11 @@ export function CartDrawer() {
                   }
                   placeholder="Número"
                   autoComplete="tel-national"
-                  className="min-w-0 rounded-2xl border border-[#e4d5c5] bg-white px-3 py-2.5 text-sm text-[#4a3b30] outline-none transition focus:border-[#a67c52] focus:ring-2 focus:ring-[#a67c52]/20"
+                  className="min-w-0 flex-1 rounded-2xl border border-[#e4d5c5] bg-white px-3 py-2.5 text-sm text-[#4a3b30] outline-none transition focus:border-[#a67c52] focus:ring-2 focus:ring-[#a67c52]/20"
                 />
               </div>
               <p className="mt-1 text-xs text-[#9a8b7e]">
-                Característica + número, sin 0 ni 15. Ej: 343 · 5001061
+                Características + número, sin 0 ni 15.
               </p>
             </div>
 
