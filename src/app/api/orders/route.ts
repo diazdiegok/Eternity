@@ -4,6 +4,7 @@ import {
   isValidEmail,
   normalizeEmail,
   sendOrderReceivedEmail,
+  sendNewOrderNotifyEmail,
 } from "@/lib/email";
 import type { CartItem } from "@/lib/whatsapp";
 
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
         body.discountPercent != null ? Number(body.discountPercent) : 0,
     });
 
-    const mail = await sendOrderReceivedEmail(email, {
+    const mailPayload = {
       code: order.code,
       createdAt: order.createdAt,
       total: order.total,
@@ -64,7 +65,18 @@ export async function POST(request: NextRequest) {
       items: order.items,
       customerName,
       customerPhone,
-    });
+      customerEmail: email,
+      channel,
+    };
+
+    const [mail, notify] = await Promise.all([
+      sendOrderReceivedEmail(email, mailPayload),
+      sendNewOrderNotifyEmail(mailPayload),
+    ]);
+
+    if (!notify.ok && !notify.skipped) {
+      console.error("Order notify email failed:", notify.error);
+    }
 
     return NextResponse.json({
       id: order.id,
@@ -76,6 +88,7 @@ export async function POST(request: NextRequest) {
       emailSent: mail.ok,
       emailSkipped: mail.skipped,
       emailError: mail.ok ? null : mail.error,
+      notifySent: notify.ok,
     });
   } catch (error) {
     console.error("Create order error:", error);

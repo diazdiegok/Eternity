@@ -64,7 +64,7 @@ function wrapEmail(title: string, body: string) {
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border:1px solid #e4d5c5;border-radius:20px;">
           <tr>
             <td style="padding:28px;text-align:center;">
-              <img src="${escapeHtml(logoUrl)}" alt="Eternity" width="96" height="96" style="display:block;margin:0 auto;width:96px;height:96px;border:0;border-radius:50%;object-fit:cover;" />
+              <img src="${escapeHtml(logoUrl)}" alt="Eternity" width="120" height="120" style="display:block;margin:0 auto;width:120px;height:120px;border:0;outline:none;text-decoration:none;" />
               <p style="margin:12px 0 0;font-size:13px;letter-spacing:0.18em;text-transform:uppercase;color:#a67c52;">${escapeHtml(brand)}</p>
               <h1 style="margin:16px 0 0;font-size:26px;font-weight:normal;color:#4a3b30;">${escapeHtml(title)}</h1>
               <div style="text-align:left;margin-top:8px;">${body}</div>
@@ -260,6 +260,95 @@ export async function sendOrderReceivedEmail(
     to,
     `Pedido ${order.code} recibido — ${SITE.emailBrand}`,
     wrapEmail("Pedido registrado", body)
+  );
+}
+
+export function getOrderNotifyEmail() {
+  return (
+    process.env.ORDER_NOTIFY_EMAIL?.trim() ||
+    SITE.orderNotifyEmail
+  );
+}
+
+/** Aviso al negocio cuando entra un pedido por la web */
+export async function sendNewOrderNotifyEmail(
+  order: OrderMailBase & {
+    customerName?: string | null;
+    customerPhone?: string | null;
+    customerEmail?: string | null;
+    channel?: string | null;
+  }
+) {
+  const notifyTo = getOrderNotifyEmail();
+  if (!notifyTo || !isValidEmail(notifyTo)) {
+    return {
+      ok: false as const,
+      skipped: true,
+      error: "ORDER_NOTIFY_EMAIL inválido",
+    };
+  }
+
+  // No mandar duplicado si el cliente usó el mismo mail del negocio
+  if (
+    order.customerEmail &&
+    normalizeEmail(order.customerEmail) === normalizeEmail(notifyTo)
+  ) {
+    return { ok: true as const, skipped: false, provider: "same-as-customer" };
+  }
+
+  const channelLabel =
+    order.channel === "mercadopago"
+      ? "Mercado Pago"
+      : order.channel === "whatsapp"
+        ? "Web / transferencia"
+        : order.channel || "Web";
+
+  const body = `
+    <p style="margin:16px 0;line-height:1.6;color:#6d5c4d;font-size:15px;">
+      Llegó un <strong>pedido nuevo</strong> por la web.
+    </p>
+    <p style="margin:0;font-size:14px;color:#8a7b6e;">N° de orden</p>
+    <p style="margin:4px 0 16px;font-size:28px;letter-spacing:0.04em;">${escapeHtml(order.code)}</p>
+    <p style="margin:0 0 8px;font-size:14px;color:#6d5c4d;">Canal: <strong>${escapeHtml(channelLabel)}</strong></p>
+    <p style="margin:0 0 8px;font-size:14px;color:#6d5c4d;">Fecha: ${escapeHtml(formatDate(order.createdAt))}</p>
+    ${
+      order.customerName
+        ? `<p style="margin:0 0 8px;font-size:14px;color:#6d5c4d;">Cliente: <strong>${escapeHtml(order.customerName)}</strong></p>`
+        : ""
+    }
+    ${
+      order.customerPhone
+        ? `<p style="margin:0 0 8px;font-size:14px;color:#6d5c4d;">Teléfono / WhatsApp: <strong>${escapeHtml(order.customerPhone)}</strong></p>`
+        : ""
+    }
+    ${
+      order.customerEmail
+        ? `<p style="margin:0 0 16px;font-size:14px;color:#6d5c4d;">Correo: <strong>${escapeHtml(order.customerEmail)}</strong></p>`
+        : ""
+    }
+    <table style="width:100%;border-collapse:collapse;font-size:14px;color:#4a3b30;">
+      ${itemsHtml(order.items)}
+    </table>
+    ${
+      order.discountAmount && order.discountAmount > 0
+        ? `<p style="margin:12px 0 0;font-size:14px;color:#a67c52;">Descuento${order.couponCode ? ` (${escapeHtml(order.couponCode)})` : ""}: −${formatPrice(order.discountAmount)}</p>`
+        : ""
+    }
+    <p style="margin:16px 0 0;font-size:18px;"><strong>Total: ${formatPrice(order.total)}</strong></p>
+    ${
+      order.customerNote
+        ? `<p style="margin:16px 0 0;padding:12px;background:#f7f1ea;border-radius:12px;font-size:14px;color:#6d5c4d;">Nota del cliente: ${escapeHtml(order.customerNote)}</p>`
+        : ""
+    }
+    <p style="margin:20px 0 0;font-size:14px;color:#6d5c4d;">
+      Revisalo en el admin: ${escapeHtml(getBaseUrl())}/admin
+    </p>
+  `;
+
+  return sendMail(
+    notifyTo,
+    `Nuevo pedido ${order.code} — ${formatPrice(order.total)}`,
+    wrapEmail("Nuevo pedido web", body)
   );
 }
 

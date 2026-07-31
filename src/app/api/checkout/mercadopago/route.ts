@@ -61,8 +61,10 @@ export async function POST(request: NextRequest) {
     });
 
     try {
-      const { sendOrderReceivedEmail } = await import("@/lib/email");
-      await sendOrderReceivedEmail(email, {
+      const { sendOrderReceivedEmail, sendNewOrderNotifyEmail } = await import(
+        "@/lib/email"
+      );
+      const mailPayload = {
         code: order.code,
         createdAt: order.createdAt,
         total: order.total,
@@ -72,7 +74,13 @@ export async function POST(request: NextRequest) {
         items: order.items,
         customerName,
         customerPhone,
-      });
+        customerEmail: email,
+        channel: "mercadopago" as const,
+      };
+      await Promise.all([
+        sendOrderReceivedEmail(email, mailPayload),
+        sendNewOrderNotifyEmail(mailPayload),
+      ]);
     } catch (mailError) {
       console.error("MP order email error:", mailError);
     }

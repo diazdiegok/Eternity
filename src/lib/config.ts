@@ -8,6 +8,8 @@ export const SITE = {
   whatsapp: "5493435001061",
   instagram: "https://www.instagram.com/eternity.recuerdos",
   currency: "ARS",
+  /** Aviso interno cuando llega un pedido web */
+  orderNotifyEmail: "eternityjoyasmaternas@gmail.com",
   transfer: {
     alias: "vale.fonta",
     cvu: "0000003100078490743361",
@@ -34,10 +36,7 @@ export function getBaseUrl() {
   return "http://localhost:3000";
 }
 
-/** URL absoluta del logo para correos.
- * No usar el dominio de Render Free: se duerme y el logo sale roto en Gmail.
- * jsDelivr sirve el archivo del repo sin cold start.
- */
+/** Logo limpio para correos (CDN; evita cold start de Render). */
 export function getEmailLogoUrl() {
-  return "https://cdn.jsdelivr.net/gh/diazdiegok/Eternity@main/public/logo.png";
+  return "https://cdn.jsdelivr.net/gh/diazdiegok/Eternity@main/public/email-logo.png";
 }
